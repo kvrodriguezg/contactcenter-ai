@@ -1,0 +1,65 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+artifacts/
+*.nupkg
+project.lock.json
+project.fragment.lock.json
+packages/
+TestResults/
+*.DotSettings.user
+
+# Logs
+logs/
+*.log
+
+# Storage
+storage/
+**/storage/documents/
+
+# Environment
+.env
+.env.local
+.env.*.local
+**/appsettings.*.local.json
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*~
+
+# Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+src/frontend/contact-center-web/.env
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Coverage / analysis
+coverage/
+*.coverage
+*.coveragexml
+TestResults/
+.sonarqube/
+
+# Secrets
+*.pfx
+*.key
+secrets.json

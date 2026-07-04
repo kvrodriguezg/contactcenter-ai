@@ -1,0 +1,80 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: contactcenterai-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-contactcenterai}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-contactcenterai}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.api
+    container_name: contactcenterai-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB:-contactcenterai};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      Jwt__Issuer: ${JWT_ISSUER:-ContactCenterAI}
+      Jwt__Audience: ${JWT_AUDIENCE:-ContactCenterAI.Client}
+      Jwt__SecretKey: ${JWT_SECRET_KEY:-DEV_ONLY_SECRET_KEY_CHANGE_IN_PRODUCTION_123456}
+      Cors__Origins__0: ${WEB_ORIGIN:-http://localhost:5173}
+      OpenAI__ApiKey: ${OPENAI_API_KEY:-}
+      Storage__DocumentsPath: /app/storage/documents
+    ports:
+      - "${API_PORT:-8080}:8080"
+    volumes:
+      - documents_data:/app/storage/documents
+      - api_logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.worker
+    container_name: contactcenterai-worker
+    environment:
+      DOTNET_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB:-contactcenterai};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      Jwt__Issuer: ${JWT_ISSUER:-ContactCenterAI}
+      Jwt__Audience: ${JWT_AUDIENCE:-ContactCenterAI.Client}
+      Jwt__SecretKey: ${JWT_SECRET_KEY:-DEV_ONLY_SECRET_KEY_CHANGE_IN_PRODUCTION_123456}
+      OpenAI__ApiKey: ${OPENAI_API_KEY:-}
+      Storage__DocumentsPath: /app/storage/documents
+    volumes:
+      - documents_data:/app/storage/documents
+      - worker_logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.web
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+    container_name: contactcenterai-web
+    ports:
+      - "${WEB_PORT:-5173}:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  documents_data:
+  api_logs:
+  worker_logs:

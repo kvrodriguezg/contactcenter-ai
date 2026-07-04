@@ -1,0 +1,100 @@
+---
+description: Estándares permanentes de arquitectura, código y calidad para ContactCenterAI
+alwaysApply: true
+---
+
+# ContactCenterAI — Reglas del proyecto
+
+Estas reglas aplican a todo el desarrollo. El código generado debe mantener el mismo estilo y calidad.
+
+## Principio rector
+
+- Si existen varias soluciones técnicamente válidas, elegir la más simple que cumpla los requisitos del proyecto académico.
+- No implementar patrones avanzados únicamente por complejidad técnica.
+- Priorizar mantenibilidad, claridad y facilidad de explicación durante la defensa del proyecto.
+
+## Arquitectura
+
+- Respetar estrictamente la Clean Architecture definida para este proyecto.
+- Nunca modificar la arquitectura sin autorización.
+- Nunca crear nuevas capas o proyectos sin autorización.
+- Respetar completamente las dependencias entre capas:
+  - `Domain` no depende de ningún otro proyecto.
+  - `Application` solo depende de `Domain`.
+  - `Infrastructure` depende de `Application` y `Domain`.
+  - `Api` y `Worker` dependen de `Application` e `Infrastructure`.
+- No mover clases entre capas sin autorización.
+- No renombrar carpetas, namespaces ni clases existentes sin autorización.
+- No referenciar frameworks de infraestructura desde `Domain` ni `Application`.
+- Nunca asumir requerimientos. Si existe alguna duda, solicitar aclaración antes de modificar la arquitectura.
+
+## Código
+
+- Escribir código limpio, simple y fácil de mantener.
+- Evitar sobreingeniería.
+- Preferir soluciones sencillas y profesionales.
+- Evitar duplicación de código.
+- Antes de escribir código nuevo, reutilizar componentes existentes siempre que sea posible.
+- Aplicar principios SOLID cuando corresponda.
+- Mantener alta cohesión y bajo acoplamiento.
+- Mantener consistencia en nombres y estructura con el código existente.
+- Reutilizar patrones ya presentes en la solución (CQRS con MediatR, validación, mapeos, DI).
+
+## Comentarios
+
+- No escribir comentarios innecesarios.
+- Comentar únicamente cuando la lógica no sea evidente.
+- Los comentarios deben estar en español.
+- Nunca generar comentarios que expliquen código obvio.
+- Nunca indicar que el código fue generado por IA.
+
+## Estilo
+
+- Utilizar nombres descriptivos.
+- Mantener consistencia en nombres de clases, métodos y variables.
+- No usar abreviaturas innecesarias.
+- No utilizar emojis.
+- No generar texto decorativo.
+- Mantener un estilo profesional y uniforme.
+
+## Desarrollo
+
+- Implementar únicamente lo solicitado.
+- No agregar funcionalidades adicionales.
+- No eliminar código existente sin autorización.
+- No modificar comportamiento existente si no fue solicitado.
+- No reemplazar implementaciones existentes por otras diferentes si no fue solicitado.
+- Realizar cambios pequeños y seguros.
+- Evitar modificar múltiples módulos simultáneamente cuando no sea necesario.
+- Mantener la solución compilando después de cada modificación.
+- Mantener compatibilidad con el resto de la solución.
+- No inventar entidades, endpoints, pantallas ni casos de uso fuera del alcance pedido.
+- Nunca asumir requerimientos. Ante cualquier duda, solicitar aclaración antes de continuar.
+
+## Tecnologías
+
+Respetar siempre las tecnologías definidas:
+
+- Backend: ASP.NET Core 9, Entity Framework Core, PostgreSQL, pgvector, MediatR, FluentValidation, AutoMapper, Serilog, Semantic Kernel
+- Frontend: React, TypeScript, Vite, Material UI
+- Infraestructura: Docker, GitHub Actions
+
+No introducir librerías, frameworks o herramientas alternativas sin autorización.
+
+## Git
+
+- Nunca ejecutar comandos destructivos.
+- No hacer force push.
+- No modificar ramas distintas de la rama actual.
+- No crear commits automáticamente salvo que se solicite.
+
+## Calidad
+
+Antes de finalizar cualquier tarea, verificar:
+
+- Que compile correctamente.
+- Que no existan errores.
+- Que no existan warnings relevantes.
+- Que la solución siga respetando Clean Architecture.
+- Que el código sea consistente con el resto del proyecto.
+- Que los cambios hayan sido pequeños, acotados y seguros.
