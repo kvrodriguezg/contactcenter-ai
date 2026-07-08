@@ -44,6 +44,8 @@ try
 
     var app = builder.Build();
 
+    app.UseGlobalExceptionHandler();
+
     if (app.Environment.IsDevelopment())
     {
         using var scope = app.Services.CreateScope();
