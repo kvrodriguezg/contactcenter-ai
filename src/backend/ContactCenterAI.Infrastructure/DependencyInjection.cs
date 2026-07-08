@@ -16,6 +16,8 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.AddHttpContextAccessor();
+
         services.AddDbContext<ApplicationDbContext>(options =>
         {
             options.UseNpgsql(
@@ -25,6 +27,10 @@ public static class DependencyInjection
 
         services.AddScoped<IApplicationDbContext>(provider =>
             provider.GetRequiredService<ApplicationDbContext>());
+
+        services.AddScoped<IPasswordHasher, PasswordHasherService>();
+        services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         return services;
     }

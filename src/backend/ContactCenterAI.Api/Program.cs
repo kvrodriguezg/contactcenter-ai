@@ -1,3 +1,4 @@
+using ContactCenterAI.Api.Extensions;
 using ContactCenterAI.Application;
 using ContactCenterAI.Infrastructure;
 using ContactCenterAI.Infrastructure.Persistence;
@@ -24,7 +25,7 @@ try
 
     builder.Services.AddControllers();
     builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
+    builder.Services.AddSwaggerGenWithJwt();
     builder.Services.AddHealthChecks()
         .AddDbContextCheck<ApplicationDbContext>();
 
@@ -42,6 +43,17 @@ try
     });
 
     var app = builder.Build();
+
+    if (app.Environment.IsDevelopment())
+    {
+        using var scope = app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await context.Database.MigrateAsync();
+        await ApplicationDbSeeder.SeedAsync(
+            context,
+            scope.ServiceProvider,
+            app.Environment);
+    }
 
     app.UseSerilogRequestLogging();
 
