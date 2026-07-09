@@ -1,6 +1,7 @@
 import {
   Box,
   Card,
+  CardActionArea,
   CardContent,
   Chip,
   Paper,
@@ -12,18 +13,20 @@ import ChatIcon from '@mui/icons-material/Chat';
 import DescriptionIcon from '@mui/icons-material/Description';
 import GroupIcon from '@mui/icons-material/Group';
 import HistoryIcon from '@mui/icons-material/History';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
 
 const modules = [
   { title: 'Empresas', description: 'Administración de tenants', icon: <BusinessIcon /> },
   { title: 'Usuarios', description: 'Gestión de cuentas y roles', icon: <GroupIcon /> },
-  { title: 'Documentos', description: 'Base de conocimiento', icon: <DescriptionIcon /> },
+  { title: 'Documentos', description: 'Base de conocimiento', icon: <DescriptionIcon />, path: '/documents' },
   { title: 'Chat IA', description: 'Asistente inteligente RAG', icon: <ChatIcon /> },
   { title: 'Historial', description: 'Conversaciones registradas', icon: <HistoryIcon /> },
 ];
 
 export function DashboardPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <Box>
@@ -49,15 +52,29 @@ export function DashboardPage() {
         {modules.map((module) => (
           <Grid key={module.title} size={{ xs: 12, sm: 6, md: 4 }}>
             <Card variant="outlined" sx={{ height: '100%' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                  {module.icon}
-                  <Typography variant="h6">{module.title}</Typography>
-                </Box>
-                <Typography variant="body2" color="text.secondary">
-                  {module.description}
-                </Typography>
-              </CardContent>
+              {'path' in module && module.path ? (
+                <CardActionArea sx={{ height: '100%' }} onClick={() => navigate(module.path!)}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      {module.icon}
+                      <Typography variant="h6">{module.title}</Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {module.description}
+                    </Typography>
+                  </CardContent>
+                </CardActionArea>
+              ) : (
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    {module.icon}
+                    <Typography variant="h6">{module.title}</Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary">
+                    {module.description}
+                  </Typography>
+                </CardContent>
+              )}
             </Card>
           </Grid>
         ))}

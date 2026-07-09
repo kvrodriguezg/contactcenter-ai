@@ -96,4 +96,57 @@ export function apiPost<T>(
   return request<T>(path, { body, skipAuth: options?.skipAuth });
 }
 
+async function parseErrorMessage(response: Response): Promise<string> {
+  try {
+    const data = (await response.json()) as {
+      message?: string;
+      errors?: Record<string, string[]>;
+    };
+
+    if (data.errors) {
+      const messages = Object.values(data.errors).flat();
+      if (messages.length > 0) {
+        return messages.join(' ');
+      }
+    }
+
+    if (data.message) {
+      return data.message;
+    }
+  } catch {
+    // Sin cuerpo JSON.
+  }
+
+  return `Error ${response.status}`;
+}
+
+export async function apiPostFormData<T>(path: string, formData: FormData): Promise<T> {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  };
+
+  const token = getAccessToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  if (response.status === 401) {
+    clearAccessToken();
+    onUnauthorized?.();
+    throw new Error(await parseErrorMessage(response));
+  }
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response));
+  }
+
+  return response.json() as Promise<T>;
+}
+
 export { API_BASE_URL };
