@@ -35,7 +35,6 @@ services:
       Gemini__EmbeddingsModel: ${GEMINI_EMBEDDINGS_MODEL:-gemini-embedding-001}
       Gemini__ChatModel: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
       Gemini__EmbeddingDimensions: ${GEMINI_EMBEDDING_DIMENSIONS:-1536}
-      Storage__DocumentsPath: /app/storage/documents
       DocumentStorage__BasePath: /app/storage/documents
     ports:
       - "${API_PORT:-8080}:8080"
@@ -62,7 +61,6 @@ services:
       Gemini__EmbeddingsModel: ${GEMINI_EMBEDDINGS_MODEL:-gemini-embedding-001}
       Gemini__ChatModel: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
       Gemini__EmbeddingDimensions: ${GEMINI_EMBEDDING_DIMENSIONS:-1536}
-      Storage__DocumentsPath: /app/storage/documents
       DocumentStorage__BasePath: /app/storage/documents
       DocumentProcessing__IntervalSeconds: 30
       DocumentProcessing__ChunkSize: 1000
