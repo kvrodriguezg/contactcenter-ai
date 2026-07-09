@@ -4,6 +4,7 @@ using ContactCenterAI.Infrastructure.Identity;
 using ContactCenterAI.Infrastructure.Persistence;
 using ContactCenterAI.Infrastructure.Storage;
 using ContactCenterAI.Infrastructure.Documents;
+using ContactCenterAI.Infrastructure.Ai;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -26,6 +27,18 @@ public static class DependencyInjection
         services.Configure<DocumentProcessingSettings>(
             configuration.GetSection(DocumentProcessingSettings.SectionName));
 
+        services.Configure<AiSettings>(
+            configuration.GetSection(AiSettings.SectionName));
+
+        services.Configure<GeminiSettings>(
+            configuration.GetSection(GeminiSettings.SectionName));
+
+        services.AddHttpClient<IEmbeddingService, GeminiEmbeddingService>(client =>
+        {
+            client.BaseAddress = new Uri("https://generativelanguage.googleapis.com/");
+            client.Timeout = TimeSpan.FromSeconds(60);
+        });
+
         services.AddDbContext<ApplicationDbContext>(options =>
         {
             options.UseNpgsql(
@@ -43,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
         services.AddScoped<IDocumentChunkingService, DocumentChunkingService>();
         services.AddScoped<IDocumentProcessingService, DocumentProcessingService>();
+        services.AddScoped<ISemanticSearchService, SemanticSearchService>();
 
         return services;
     }

@@ -1,0 +1,94 @@
+using ContactCenterAI.Application.Common.Interfaces;
+using ContactCenterAI.Application.Documents.DTOs;
+using ContactCenterAI.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using Pgvector;
+
+namespace ContactCenterAI.Infrastructure.Documents;
+
+public class SemanticSearchService : ISemanticSearchService
+{
+    private const int ContentPreviewLength = 200;
+
+    private readonly ApplicationDbContext _context;
+    private readonly IEmbeddingService _embeddingService;
+
+    public SemanticSearchService(
+        ApplicationDbContext context,
+        IEmbeddingService embeddingService)
+    {
+        _context = context;
+        _embeddingService = embeddingService;
+    }
+
+    public async Task<IReadOnlyList<SemanticSearchResultDto>> SearchSimilarChunksAsync(
+        Guid companyId,
+        string query,
+        int topK,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_embeddingService.IsConfigured)
+        {
+            throw new InvalidOperationException(
+                "Proveedor de IA no configurado para generar embeddings.");
+        }
+
+        var queryEmbedding = await _embeddingService.GenerateEmbeddingAsync(
+            query,
+            "RETRIEVAL_QUERY",
+            cancellationToken);
+
+        var queryVector = new Vector(queryEmbedding);
+
+        const string sql = """
+            SELECT
+                c."DocumentId" AS "DocumentId",
+                d."OriginalFileName" AS "OriginalFileName",
+                c."ChunkIndex" AS "ChunkIndex",
+                c."Content" AS "Content",
+                1 - (c."Embedding" <=> @queryEmbedding) AS "Score"
+            FROM document_chunks c
+            INNER JOIN documents d ON d."Id" = c."DocumentId"
+            WHERE d."CompanyId" = @companyId
+              AND c."Embedding" IS NOT NULL
+            ORDER BY c."Embedding" <=> @queryEmbedding
+            LIMIT @topK
+            """;
+
+        var results = new List<SemanticSearchResultDto>();
+
+        await using var connection = (NpgsqlConnection)_context.Database.GetDbConnection();
+
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.Add(new NpgsqlParameter("queryEmbedding", queryVector));
+        command.Parameters.Add(new NpgsqlParameter("companyId", companyId));
+        command.Parameters.Add(new NpgsqlParameter("topK", topK));
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var content = reader.GetString(reader.GetOrdinal("Content"));
+            var preview = content.Length <= ContentPreviewLength
+                ? content
+                : content[..ContentPreviewLength];
+
+            results.Add(new SemanticSearchResultDto
+            {
+                DocumentId = reader.GetGuid(reader.GetOrdinal("DocumentId")),
+                OriginalFileName = reader.GetString(reader.GetOrdinal("OriginalFileName")),
+                ChunkIndex = reader.GetInt32(reader.GetOrdinal("ChunkIndex")),
+                ContentPreview = preview,
+                Score = reader.GetDouble(reader.GetOrdinal("Score"))
+            });
+        }
+
+        return results;
+    }
+}

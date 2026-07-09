@@ -1,6 +1,7 @@
 using ContactCenterAI.Application.Documents.Commands.UploadDocument;
 using ContactCenterAI.Application.Documents.Queries.GetDocumentById;
 using ContactCenterAI.Application.Documents.Queries.ListDocuments;
+using ContactCenterAI.Application.Documents.Queries.SearchDocuments;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -51,11 +52,34 @@ public class DocumentsController : ControllerBase
         var result = await _mediator.Send(new GetDocumentByIdQuery(id), cancellationToken);
         return Ok(result);
     }
+
+    [HttpPost("search")]
+    public async Task<IActionResult> SearchDocuments(
+        [FromBody] SearchDocumentsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var query = new SearchDocumentsQuery(
+            request.Query,
+            request.TopK,
+            request.CompanyId);
+
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(result);
+    }
 }
 
 public class UploadDocumentRequest
 {
     public IFormFile File { get; set; } = null!;
+
+    public Guid? CompanyId { get; set; }
+}
+
+public class SearchDocumentsRequest
+{
+    public string Query { get; set; } = string.Empty;
+
+    public int TopK { get; set; } = 5;
 
     public Guid? CompanyId { get; set; }
 }

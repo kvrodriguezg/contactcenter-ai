@@ -1,5 +1,6 @@
 using ContactCenterAI.Application.Common.Interfaces;
 using ContactCenterAI.Domain.Documents;
+using ContactCenterAI.Infrastructure.Ai;
 using ContactCenterAI.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -15,7 +16,9 @@ public class DocumentProcessingService : IDocumentProcessingService
     private readonly IDocumentStorageService _documentStorageService;
     private readonly IPdfTextExtractor _pdfTextExtractor;
     private readonly IDocumentChunkingService _documentChunkingService;
+    private readonly IEmbeddingService _embeddingService;
     private readonly DocumentProcessingSettings _settings;
+    private readonly GeminiSettings _geminiSettings;
     private readonly ILogger<DocumentProcessingService> _logger;
 
     public DocumentProcessingService(
@@ -23,14 +26,18 @@ public class DocumentProcessingService : IDocumentProcessingService
         IDocumentStorageService documentStorageService,
         IPdfTextExtractor pdfTextExtractor,
         IDocumentChunkingService documentChunkingService,
+        IEmbeddingService embeddingService,
         IOptions<DocumentProcessingSettings> settings,
+        IOptions<GeminiSettings> geminiSettings,
         ILogger<DocumentProcessingService> logger)
     {
         _context = context;
         _documentStorageService = documentStorageService;
         _pdfTextExtractor = pdfTextExtractor;
         _documentChunkingService = documentChunkingService;
+        _embeddingService = embeddingService;
         _settings = settings.Value;
+        _geminiSettings = geminiSettings.Value;
         _logger = logger;
     }
 
@@ -102,6 +109,12 @@ public class DocumentProcessingService : IDocumentProcessingService
                 throw new InvalidOperationException("No se generaron fragmentos de texto a partir del PDF.");
             }
 
+            if (!_embeddingService.IsConfigured)
+            {
+                throw new InvalidOperationException(
+                    "Proveedor de IA no configurado para generar embeddings.");
+            }
+
             var existingChunks = await _context.DocumentChunks
                 .Where(c => c.DocumentId == document.Id)
                 .ToListAsync(cancellationToken);
@@ -112,18 +125,29 @@ public class DocumentProcessingService : IDocumentProcessingService
             }
 
             var createdAt = DateTime.UtcNow;
+            var embeddedAt = DateTime.UtcNow;
+            var chunks = new List<DocumentChunk>(chunkTexts.Count);
 
             for (var index = 0; index < chunkTexts.Count; index++)
             {
-                _context.DocumentChunks.Add(new DocumentChunk
+                var embedding = await _embeddingService.GenerateEmbeddingAsync(
+                    chunkTexts[index],
+                    cancellationToken: cancellationToken);
+
+                chunks.Add(new DocumentChunk
                 {
                     Id = Guid.NewGuid(),
                     DocumentId = document.Id,
                     ChunkIndex = index,
                     Content = chunkTexts[index],
+                    Embedding = embedding,
+                    EmbeddingModel = _geminiSettings.EmbeddingsModel,
+                    EmbeddedAt = embeddedAt,
                     CreatedAt = createdAt
                 });
             }
+
+            _context.DocumentChunks.AddRange(chunks);
 
             document.Status = DocumentStatus.Processed;
             document.ProcessedAt = DateTime.UtcNow;
@@ -133,7 +157,7 @@ public class DocumentProcessingService : IDocumentProcessingService
             await _context.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation(
-                "Documento {DocumentId} procesado correctamente con {ChunkCount} fragmentos",
+                "Documento {DocumentId} procesado correctamente con {ChunkCount} fragmentos y embeddings",
                 document.Id,
                 chunkTexts.Count);
         }

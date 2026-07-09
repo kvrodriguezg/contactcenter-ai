@@ -12,5 +12,11 @@ public class DocumentChunk : BaseEntity
 
     public string Content { get; set; } = string.Empty;
 
+    public float[]? Embedding { get; set; }
+
+    public string? EmbeddingModel { get; set; }
+
+    public DateTime? EmbeddedAt { get; set; }
+
     public DateTime CreatedAt { get; set; }
 }

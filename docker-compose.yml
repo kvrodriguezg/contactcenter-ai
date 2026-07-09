@@ -30,7 +30,11 @@ services:
       Jwt__Audience: ${JWT_AUDIENCE:-ContactCenterAI.Client}
       Jwt__SecretKey: ${JWT_SECRET_KEY:-DEV_ONLY_SECRET_KEY_CHANGE_IN_PRODUCTION_123456}
       Cors__Origins__0: ${WEB_ORIGIN:-http://localhost:5173}
-      OpenAI__ApiKey: ${OPENAI_API_KEY:-}
+      Ai__Provider: ${AI_PROVIDER:-Gemini}
+      Gemini__ApiKey: ${GEMINI_API_KEY:-}
+      Gemini__EmbeddingsModel: ${GEMINI_EMBEDDINGS_MODEL:-gemini-embedding-001}
+      Gemini__ChatModel: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
+      Gemini__EmbeddingDimensions: ${GEMINI_EMBEDDING_DIMENSIONS:-1536}
       Storage__DocumentsPath: /app/storage/documents
       DocumentStorage__BasePath: /app/storage/documents
     ports:
@@ -53,7 +57,11 @@ services:
       Jwt__Issuer: ${JWT_ISSUER:-ContactCenterAI}
       Jwt__Audience: ${JWT_AUDIENCE:-ContactCenterAI.Client}
       Jwt__SecretKey: ${JWT_SECRET_KEY:-DEV_ONLY_SECRET_KEY_CHANGE_IN_PRODUCTION_123456}
-      OpenAI__ApiKey: ${OPENAI_API_KEY:-}
+      Ai__Provider: ${AI_PROVIDER:-Gemini}
+      Gemini__ApiKey: ${GEMINI_API_KEY:-}
+      Gemini__EmbeddingsModel: ${GEMINI_EMBEDDINGS_MODEL:-gemini-embedding-001}
+      Gemini__ChatModel: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
+      Gemini__EmbeddingDimensions: ${GEMINI_EMBEDDING_DIMENSIONS:-1536}
       Storage__DocumentsPath: /app/storage/documents
       DocumentStorage__BasePath: /app/storage/documents
       DocumentProcessing__IntervalSeconds: 30

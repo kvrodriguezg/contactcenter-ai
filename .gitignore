@@ -64,3 +64,8 @@ TestResults/
 *.key
 secrets.json
 .cursor/
+.env
+.env.local
+.env.development
+.env.production
+*.secrets
