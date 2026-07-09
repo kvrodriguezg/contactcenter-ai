@@ -3,6 +3,7 @@ using ContactCenterAI.Application.Common.Interfaces;
 using ContactCenterAI.Infrastructure.Identity;
 using ContactCenterAI.Infrastructure.Persistence;
 using ContactCenterAI.Infrastructure.Storage;
+using ContactCenterAI.Infrastructure.Documents;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -22,6 +23,9 @@ public static class DependencyInjection
         services.Configure<DocumentStorageSettings>(
             configuration.GetSection(DocumentStorageSettings.SectionName));
 
+        services.Configure<DocumentProcessingSettings>(
+            configuration.GetSection(DocumentProcessingSettings.SectionName));
+
         services.AddDbContext<ApplicationDbContext>(options =>
         {
             options.UseNpgsql(
@@ -36,6 +40,9 @@ public static class DependencyInjection
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IDocumentStorageService, LocalDocumentStorageService>();
+        services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
+        services.AddScoped<IDocumentChunkingService, DocumentChunkingService>();
+        services.AddScoped<IDocumentProcessingService, DocumentProcessingService>();
 
         return services;
     }
