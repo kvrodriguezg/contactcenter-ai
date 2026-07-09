@@ -21,4 +21,6 @@ public class User : AuditableEntity
     public ICollection<RefreshToken> RefreshTokens { get; set; } = [];
 
     public ICollection<Document> UploadedDocuments { get; set; } = [];
+
+    public ICollection<Chat.Conversation> Conversations { get; set; } = [];
 }

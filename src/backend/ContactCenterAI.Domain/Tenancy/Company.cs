@@ -13,4 +13,6 @@ public class Company : AuditableEntity
     public ICollection<User> Users { get; set; } = [];
 
     public ICollection<Document> Documents { get; set; } = [];
+
+    public ICollection<Chat.Conversation> Conversations { get; set; } = [];
 }

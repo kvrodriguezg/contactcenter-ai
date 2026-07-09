@@ -91,6 +91,14 @@ public class GlobalExceptionHandlerMiddleware
                         ? "Recurso no encontrado."
                         : notFoundException.Message,
                 }),
+            InvalidOperationException invalidOperationException when
+                invalidOperationException.Message.Contains("no configurado", StringComparison.OrdinalIgnoreCase) ||
+                invalidOperationException.Message.Contains("No fue posible generar", StringComparison.OrdinalIgnoreCase) => (
+                (int)HttpStatusCode.ServiceUnavailable,
+                new ApiErrorResponse
+                {
+                    Message = invalidOperationException.Message,
+                }),
             _ => (
                 (int)HttpStatusCode.InternalServerError,
                 new ApiErrorResponse

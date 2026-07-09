@@ -39,6 +39,12 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(60);
         });
 
+        services.AddHttpClient<IChatCompletionService, GeminiChatCompletionService>(client =>
+        {
+            client.BaseAddress = new Uri("https://generativelanguage.googleapis.com/");
+            client.Timeout = TimeSpan.FromSeconds(90);
+        });
+
         services.AddDbContext<ApplicationDbContext>(options =>
         {
             options.UseNpgsql(

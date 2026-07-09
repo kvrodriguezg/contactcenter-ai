@@ -1,4 +1,5 @@
 using ContactCenterAI.Application.Common.Interfaces;
+using ContactCenterAI.Domain.Chat;
 using ContactCenterAI.Domain.Documents;
 using ContactCenterAI.Domain.Identity;
 using ContactCenterAI.Domain.Tenancy;
@@ -22,6 +23,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Document> Documents => Set<Document>();
 
     public DbSet<DocumentChunk> DocumentChunks => Set<DocumentChunk>();
+
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+
+    public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -58,14 +58,15 @@ public class SemanticSearchService : ISemanticSearchService
 
         var results = new List<SemanticSearchResultDto>();
 
-        await using var connection = (NpgsqlConnection)_context.Database.GetDbConnection();
+        var connection = _context.Database.GetDbConnection();
 
         if (connection.State != System.Data.ConnectionState.Open)
         {
             await connection.OpenAsync(cancellationToken);
         }
 
-        await using var command = new NpgsqlCommand(sql, connection);
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
         command.Parameters.Add(new NpgsqlParameter("queryEmbedding", queryVector));
         command.Parameters.Add(new NpgsqlParameter("companyId", companyId));
         command.Parameters.Add(new NpgsqlParameter("topK", topK));
