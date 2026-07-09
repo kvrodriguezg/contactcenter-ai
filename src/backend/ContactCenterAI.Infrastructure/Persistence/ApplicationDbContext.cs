@@ -1,4 +1,5 @@
 using ContactCenterAI.Application.Common.Interfaces;
+using ContactCenterAI.Domain.Documents;
 using ContactCenterAI.Domain.Identity;
 using ContactCenterAI.Domain.Tenancy;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,10 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<User> Users => Set<User>();
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    public DbSet<Document> Documents => Set<Document>();
+
+    public DbSet<DocumentChunk> DocumentChunks => Set<DocumentChunk>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -1,4 +1,5 @@
 using ContactCenterAI.Domain.Common;
+using ContactCenterAI.Domain.Documents;
 using ContactCenterAI.Domain.Tenancy;
 
 namespace ContactCenterAI.Domain.Identity;
@@ -18,4 +19,6 @@ public class User : AuditableEntity
     public bool IsActive { get; set; } = true;
 
     public ICollection<RefreshToken> RefreshTokens { get; set; } = [];
+
+    public ICollection<Document> UploadedDocuments { get; set; } = [];
 }

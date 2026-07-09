@@ -32,6 +32,7 @@ services:
       Cors__Origins__0: ${WEB_ORIGIN:-http://localhost:5173}
       OpenAI__ApiKey: ${OPENAI_API_KEY:-}
       Storage__DocumentsPath: /app/storage/documents
+      DocumentStorage__BasePath: /app/storage/documents
     ports:
       - "${API_PORT:-8080}:8080"
     volumes:
@@ -54,6 +55,7 @@ services:
       Jwt__SecretKey: ${JWT_SECRET_KEY:-DEV_ONLY_SECRET_KEY_CHANGE_IN_PRODUCTION_123456}
       OpenAI__ApiKey: ${OPENAI_API_KEY:-}
       Storage__DocumentsPath: /app/storage/documents
+      DocumentStorage__BasePath: /app/storage/documents
     volumes:
       - documents_data:/app/storage/documents
       - worker_logs:/app/logs

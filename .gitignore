@@ -23,8 +23,8 @@ TestResults/
 logs/
 *.log
 
-# Storage
-storage/
+# Storage (archivos subidos, no código fuente)
+/storage/
 **/storage/documents/
 
 # Environment

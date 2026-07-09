@@ -2,6 +2,7 @@ using System.Text;
 using ContactCenterAI.Application.Common.Interfaces;
 using ContactCenterAI.Infrastructure.Identity;
 using ContactCenterAI.Infrastructure.Persistence;
+using ContactCenterAI.Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -18,6 +19,9 @@ public static class DependencyInjection
     {
         services.AddHttpContextAccessor();
 
+        services.Configure<DocumentStorageSettings>(
+            configuration.GetSection(DocumentStorageSettings.SectionName));
+
         services.AddDbContext<ApplicationDbContext>(options =>
         {
             options.UseNpgsql(
@@ -31,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher, PasswordHasherService>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IDocumentStorageService, LocalDocumentStorageService>();
 
         return services;
     }
