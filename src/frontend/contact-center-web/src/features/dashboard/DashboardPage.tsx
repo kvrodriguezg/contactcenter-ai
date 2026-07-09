@@ -20,8 +20,8 @@ const modules = [
   { title: 'Empresas', description: 'Administración de tenants', icon: <BusinessIcon /> },
   { title: 'Usuarios', description: 'Gestión de cuentas y roles', icon: <GroupIcon /> },
   { title: 'Documentos', description: 'Base de conocimiento', icon: <DescriptionIcon />, path: '/documents' },
-  { title: 'Chat IA', description: 'Asistente inteligente RAG', icon: <ChatIcon /> },
-  { title: 'Historial', description: 'Conversaciones registradas', icon: <HistoryIcon /> },
+  { title: 'Chat IA', description: 'Asistente inteligente RAG', icon: <ChatIcon />, path: '/chat' },
+  { title: 'Historial', description: 'Conversaciones registradas', icon: <HistoryIcon />, path: '/chat' },
 ];
 
 export function DashboardPage() {
