@@ -1,5 +1,6 @@
+import { getTokenProvider } from '../../features/auth/tokenProvider';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
-const TOKEN_KEY = 'contactcenterai_access_token';
 
 type RequestOptions = {
   skipAuth?: boolean;
@@ -13,18 +14,6 @@ export function setOnUnauthorized(handler: () => void) {
   onUnauthorized = handler;
 }
 
-export function getAccessToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-export function setAccessToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-export function clearAccessToken() {
-  localStorage.removeItem(TOKEN_KEY);
-}
-
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = {
     Accept: 'application/json',
@@ -35,7 +24,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   if (!options.skipAuth) {
-    const token = getAccessToken();
+    const token = await getTokenProvider().getToken();
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
@@ -49,7 +38,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (response.status === 401) {
     if (!options.skipAuth) {
-      clearAccessToken();
+      getTokenProvider().clearToken();
       onUnauthorized?.();
     }
     let message = 'No autorizado';
@@ -125,7 +114,7 @@ export async function apiPostFormData<T>(path: string, formData: FormData): Prom
     Accept: 'application/json',
   };
 
-  const token = getAccessToken();
+  const token = await getTokenProvider().getToken();
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
@@ -137,7 +126,7 @@ export async function apiPostFormData<T>(path: string, formData: FormData): Prom
   });
 
   if (response.status === 401) {
-    clearAccessToken();
+    getTokenProvider().clearToken();
     onUnauthorized?.();
     throw new Error(await parseErrorMessage(response));
   }

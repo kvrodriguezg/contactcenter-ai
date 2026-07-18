@@ -13,4 +13,6 @@ public interface ICurrentUserService
     Guid? CompanyId { get; }
 
     bool IsAuthenticated { get; }
+
+    string? AuthorizationFailureMessage { get; }
 }

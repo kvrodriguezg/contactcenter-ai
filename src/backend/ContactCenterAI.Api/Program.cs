@@ -1,6 +1,7 @@
 using ContactCenterAI.Api.Extensions;
 using ContactCenterAI.Application;
 using ContactCenterAI.Infrastructure;
+using ContactCenterAI.Infrastructure.Identity;
 using ContactCenterAI.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -21,7 +22,7 @@ try
 
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
-    builder.Services.AddApiAuthentication(builder.Configuration);
+    builder.Services.AddApiAuthentication(builder.Configuration, builder.Environment);
 
     builder.Services.AddControllers();
     builder.Services.AddEndpointsApiExplorer();
@@ -67,6 +68,7 @@ try
 
     app.UseCors("Frontend");
     app.UseAuthentication();
+    app.UseMiddleware<LocalUserResolutionMiddleware>();
     app.UseAuthorization();
     app.MapControllers();
     app.MapHealthChecks("/health");

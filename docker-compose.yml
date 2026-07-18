@@ -29,6 +29,9 @@ services:
       Jwt__Issuer: ${JWT_ISSUER:-ContactCenterAI}
       Jwt__Audience: ${JWT_AUDIENCE:-ContactCenterAI.Client}
       Jwt__SecretKey: ${JWT_SECRET_KEY:-DEV_ONLY_SECRET_KEY_CHANGE_IN_PRODUCTION_123456}
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-Local}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://contactcenterai-api}
       Cors__Origins__0: ${WEB_ORIGIN:-http://localhost:5173}
       Ai__Provider: ${AI_PROVIDER:-Gemini}
       Gemini__ApiKey: ${GEMINI_API_KEY:-}
@@ -79,6 +82,11 @@ services:
       dockerfile: deploy/docker/Dockerfile.web
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+        VITE_AUTH_PROVIDER: ${VITE_AUTH_PROVIDER:-Local}
+        VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN:-}
+        VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID:-}
+        VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE:-https://contactcenterai-api}
+        VITE_AUTH0_REDIRECT_URI: ${VITE_AUTH0_REDIRECT_URI:-http://localhost:5173}
     container_name: contactcenterai-web
     ports:
       - "${WEB_PORT:-5173}:80"

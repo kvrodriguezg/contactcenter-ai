@@ -1,10 +1,10 @@
 using ContactCenterAI.Application.Auth.Commands.Login;
 using ContactCenterAI.Application.Auth.Queries.GetCurrentUser;
-using ContactCenterAI.Application.Companies.Queries.ListCompanies;
-using ContactCenterAI.Application.Users.Queries.ListUsers;
+using ContactCenterAI.Infrastructure.Identity;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace ContactCenterAI.Api.Controllers;
 
@@ -13,16 +13,30 @@ namespace ContactCenterAI.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly AuthenticationSettings _authenticationSettings;
 
-    public AuthController(IMediator mediator)
+    public AuthController(
+        IMediator mediator,
+        IOptions<AuthenticationSettings> authenticationSettings)
     {
         _mediator = mediator;
+        _authenticationSettings = authenticationSettings.Value;
     }
 
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
+        if (_authenticationSettings.IsAuth0)
+        {
+            return StatusCode(
+                StatusCodes.Status410Gone,
+                new
+                {
+                    message = "El login local está deshabilitado. Use Auth0 para autenticarse."
+                });
+        }
+
         try
         {
             var result = await _mediator.Send(
@@ -46,9 +60,9 @@ public class AuthController : ControllerBase
             var result = await _mediator.Send(new GetCurrentUserQuery(), cancellationToken);
             return Ok(result);
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException ex)
         {
-            return Unauthorized();
+            return Unauthorized(new { message = ex.Message });
         }
     }
 }

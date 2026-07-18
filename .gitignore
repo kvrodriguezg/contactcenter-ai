@@ -69,3 +69,6 @@ secrets.json
 .env.development
 .env.production
 *.secrets
+
+# Local tooling
+.tools/
