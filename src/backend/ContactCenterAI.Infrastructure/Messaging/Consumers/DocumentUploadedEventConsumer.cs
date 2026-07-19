@@ -8,22 +8,22 @@ using Microsoft.Extensions.Options;
 namespace ContactCenterAI.Infrastructure.Messaging.Consumers;
 
 /// <summary>
-/// Consumes <see cref="DocumentUploadedEvent"/> and triggers the EXISTING document processing
+/// Consumes <see cref="DocumentUploadedEvent"/> and triggers the existing document processing
 /// pipeline (extraction → chunking → embeddings) via <see cref="IDocumentProcessingService"/>.
 /// Idempotent: already-Processed/Processing documents are skipped, so duplicate messages and the
 /// polling fallback never produce duplicate chunks.
 /// </summary>
-public sealed class DocumentUploadedConsumer : RabbitMqConsumerBase
+public class DocumentUploadedEventConsumer : RabbitMqConsumerBase
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 
-    private readonly ILogger<DocumentUploadedConsumer> _logger;
+    private readonly ILogger<DocumentUploadedEventConsumer> _logger;
 
-    public DocumentUploadedConsumer(
+    public DocumentUploadedEventConsumer(
         RabbitMqConnection connection,
         IServiceScopeFactory scopeFactory,
         IOptions<RabbitMqSettings> settings,
-        ILogger<DocumentUploadedConsumer> logger)
+        ILogger<DocumentUploadedEventConsumer> logger)
         : base(connection, scopeFactory, settings.Value, logger)
     {
         _logger = logger;
@@ -40,21 +40,22 @@ public sealed class DocumentUploadedConsumer : RabbitMqConsumerBase
             ?? throw new InvalidOperationException("Payload DocumentUploadedEvent inválido.");
 
         _logger.LogInformation(
-            "Evento DocumentUploaded recibido: DocumentId={DocumentId}, CompanyId={CompanyId}",
+            "Evento DocumentUploaded recibido: DocumentId={DocumentId}, CompanyId={CompanyId}, CorrelationId={CorrelationId}",
             @event.DocumentId,
-            @event.CompanyId);
+            @event.CompanyId,
+            @event.CorrelationId);
 
         var processingService = services.GetRequiredService<IDocumentProcessingService>();
         var outcome = await processingService.ProcessDocumentAsync(@event.DocumentId, cancellationToken);
 
         _logger.LogInformation(
-            "Procesamiento por evento del documento {DocumentId} finalizado con resultado {Outcome}",
+            "Procesamiento por evento del documento {DocumentId} finalizado con resultado {Outcome} (CorrelationId={CorrelationId})",
             @event.DocumentId,
-            outcome);
+            outcome,
+            @event.CorrelationId);
 
-        // A genuine failure throws inside the pipeline only for infra errors; ProcessDocumentAsync
-        // itself marks the document Failed and returns an outcome. We surface Failed as an
-        // exception so the retry executor can retry transient issues before giving up.
+        // Surface Failed so the retry executor can retry transient issues before giving up.
+        // SkippedAlreadyProcessed / SkippedInProgress / NotFound are successful dispositions.
         if (outcome == DocumentProcessingOutcome.Failed)
         {
             throw new InvalidOperationException(

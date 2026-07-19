@@ -1,4 +1,5 @@
 using ContactCenterAI.Application.Common.Interfaces;
+using ContactCenterAI.Application.Common.Messaging;
 using ContactCenterAI.Infrastructure.Documents;
 using Microsoft.Extensions.Options;
 
@@ -8,31 +9,57 @@ public class Worker : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IOptions<DocumentProcessingSettings> _settings;
+    private readonly IOptions<MessagingSettings> _messagingSettings;
     private readonly ILogger<Worker> _logger;
 
     public Worker(
         IServiceScopeFactory scopeFactory,
         IOptions<DocumentProcessingSettings> settings,
+        IOptions<MessagingSettings> messagingSettings,
         ILogger<Worker> logger)
     {
         _scopeFactory = scopeFactory;
         _settings = settings;
+        _messagingSettings = messagingSettings;
         _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!_settings.Value.PollingEnabled)
+        var messagingEnabled = _messagingSettings.Value.Enabled;
+        var pollingEnabled = _settings.Value.PollingEnabled;
+
+        if (!pollingEnabled)
         {
-            _logger.LogInformation(
-                "Polling de documentos deshabilitado (DocumentProcessing:PollingEnabled=false). "
-                + "El Worker dependerá exclusivamente de los consumidores de mensajería.");
+            if (messagingEnabled)
+            {
+                _logger.LogInformation(
+                    "Polling de documentos deshabilitado (DocumentProcessing:PollingEnabled=false). "
+                    + "El Worker depende de los consumidores RabbitMQ; sin polling constante.");
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Polling y mensajería deshabilitados: ningún mecanismo procesará documentos pendientes.");
+            }
+
             return;
         }
 
-        _logger.LogInformation(
-            "ContactCenterAI Worker iniciado. Polling de reconciliación cada {IntervalSeconds}s",
-            _settings.Value.IntervalSeconds);
+        if (messagingEnabled)
+        {
+            _logger.LogInformation(
+                "ContactCenterAI Worker en modo reconciliación (Messaging:Enabled=true). "
+                + "Polling cada {IntervalSeconds}s como fallback seguro ante fallos del broker",
+                _settings.Value.IntervalSeconds);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "ContactCenterAI Worker iniciado en modo polling (Messaging:Enabled=false). "
+                + "Intervalo {IntervalSeconds}s",
+                _settings.Value.IntervalSeconds);
+        }
 
         while (!stoppingToken.IsCancellationRequested)
         {

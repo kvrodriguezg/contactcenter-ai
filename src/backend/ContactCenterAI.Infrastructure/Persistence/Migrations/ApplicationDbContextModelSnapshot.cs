@@ -356,6 +356,13 @@ namespace ContactCenterAI.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("ResolvedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("EscalationProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EscalationStatus")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)

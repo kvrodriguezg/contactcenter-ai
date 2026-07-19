@@ -49,8 +49,8 @@ public static class MessagingServiceCollectionExtensions
             return services;
         }
 
-        services.AddHostedService<DocumentUploadedConsumer>();
-        services.AddHostedService<TicketCreatedConsumer>();
+        services.AddHostedService<DocumentUploadedEventConsumer>();
+        services.AddHostedService<TicketCreatedEventConsumer>();
 
         return services;
     }

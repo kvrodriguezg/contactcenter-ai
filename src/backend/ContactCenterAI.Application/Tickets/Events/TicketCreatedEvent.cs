@@ -1,8 +1,8 @@
 namespace ContactCenterAI.Application.Tickets.Events;
 
 /// <summary>
-/// Domain event raised when a ticket is created.
-/// Extension point for future messaging (e.g. RabbitMQ); no broker integration yet.
+/// Domain event raised when a ticket is created. Mapped to the messaging integration contract
+/// by <c>ITicketEventPublisher</c> without coupling the use-case to the broker.
 /// </summary>
 public sealed record TicketCreatedEvent(
     Guid TicketId,
@@ -10,4 +10,5 @@ public sealed record TicketCreatedEvent(
     Guid CreatedByUserId,
     string Subject,
     string Priority,
-    DateTime OccurredAtUtc);
+    DateTime OccurredAt,
+    Guid CorrelationId);

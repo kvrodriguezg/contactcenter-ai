@@ -80,7 +80,8 @@ public static class DependencyInjection
         services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
         services.AddScoped<IDocumentChunkingService, DocumentChunkingService>();
         services.AddScoped<IDocumentProcessingService, DocumentProcessingService>();
-        services.AddScoped<ITicketEventPublisher, NoOpTicketEventPublisher>();
+        services.AddScoped<ITicketEscalationService, TicketEscalationService>();
+        services.AddScoped<ITicketEventPublisher, TicketEventPublisher>();
         services.AddScoped<ISemanticSearchService, SemanticSearchService>();
 
         services.AddMessaging(configuration);

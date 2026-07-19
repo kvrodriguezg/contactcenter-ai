@@ -3,14 +3,13 @@ using ContactCenterAI.Domain.Chat;
 using ContactCenterAI.Domain.Documents;
 using ContactCenterAI.Domain.Identity;
 using ContactCenterAI.Domain.Tenancy;
+using ContactCenterAI.Domain.Tickets;
 using Microsoft.EntityFrameworkCore;
 
 namespace ContactCenterAI.Infrastructure.Tests.Messaging;
 
 /// <summary>
-/// Minimal in-memory <see cref="IApplicationDbContext"/> for exercising document-processing
-/// idempotency without pgvector. Only Documents/DocumentChunks are mapped; the pgvector Embedding
-/// column is ignored so the EF Core InMemory provider can be used.
+/// Minimal in-memory <see cref="IApplicationDbContext"/> for messaging/escalation tests without pgvector.
 /// </summary>
 public class MessagingTestDbContext : DbContext, IApplicationDbContext
 {
@@ -33,6 +32,8 @@ public class MessagingTestDbContext : DbContext, IApplicationDbContext
 
     public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
 
+    public DbSet<Ticket> Tickets => Set<Ticket>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Document>(builder =>
@@ -48,6 +49,17 @@ public class MessagingTestDbContext : DbContext, IApplicationDbContext
             builder.HasKey(c => c.Id);
             builder.Ignore(c => c.Embedding);
             builder.Ignore(c => c.Document);
+        });
+
+        modelBuilder.Entity<Ticket>(builder =>
+        {
+            builder.HasKey(t => t.Id);
+            builder.Ignore(t => t.Company);
+            builder.Ignore(t => t.CreatedByUser);
+            builder.Ignore(t => t.AssignedToUser);
+            builder.Ignore(t => t.Conversation);
+            builder.Property(t => t.Priority).HasConversion<string>();
+            builder.Property(t => t.Status).HasConversion<string>();
         });
 
         modelBuilder.Ignore<Company>();

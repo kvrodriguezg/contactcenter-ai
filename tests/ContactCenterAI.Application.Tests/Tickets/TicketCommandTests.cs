@@ -133,6 +133,8 @@ public class TicketCommandTests
         Assert.Equal(nameof(TicketPriority.High), result.Priority);
         Assert.Single(publisher.Published);
         Assert.Equal(result.Id, publisher.Published[0].TicketId);
+        Assert.Equal(nameof(TicketPriority.High), publisher.Published[0].Priority);
+        Assert.NotEqual(Guid.Empty, publisher.Published[0].CorrelationId);
     }
 
     [Fact]

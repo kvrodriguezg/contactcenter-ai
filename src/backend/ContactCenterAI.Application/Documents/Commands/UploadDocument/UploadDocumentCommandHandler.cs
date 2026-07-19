@@ -153,7 +153,8 @@ public class UploadDocumentCommandHandler : IRequestHandler<UploadDocumentComman
                     document.Id,
                     document.CompanyId,
                     document.UploadedByUserId,
-                    DateTime.UtcNow),
+                    DateTime.UtcNow,
+                    Guid.NewGuid()),
                 cancellationToken);
         }
         catch (Exception exception)

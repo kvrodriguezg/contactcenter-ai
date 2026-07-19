@@ -131,6 +131,7 @@ services:
       DocumentProcessing__ChunkSize: 1000
       DocumentProcessing__ChunkOverlap: 150
       DocumentProcessing__BatchSize: 5
+      # When Messaging is on, default polling off to avoid constant scans; set true for reconciliation.
       DocumentProcessing__PollingEnabled: ${DOCUMENT_PROCESSING_POLLING_ENABLED:-true}
       Messaging__Enabled: ${MESSAGING_ENABLED:-false}
       RabbitMq__Host: ${RABBITMQ_HOST:-rabbitmq}
@@ -179,8 +180,10 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
     ports:
+      # AMQP: reachable on the compose network; host mapping is for local tooling only.
       - "${RABBITMQ_PORT:-5672}:5672"
-      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+      # Management UI: loopback-only (local/restricted). Do not expose publicly in production.
+      - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
