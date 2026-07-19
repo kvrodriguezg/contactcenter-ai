@@ -3,14 +3,14 @@ using ContactCenterAI.Domain.Chat;
 using ContactCenterAI.Domain.Documents;
 using ContactCenterAI.Domain.Identity;
 using ContactCenterAI.Domain.Tenancy;
+using ContactCenterAI.Domain.Tickets;
 using Microsoft.EntityFrameworkCore;
 
 namespace ContactCenterAI.Application.Tests.Common;
 
 /// <summary>
 /// Minimal in-memory <see cref="IApplicationDbContext"/> for handler unit tests.
-/// Mirrors the mapping approach used by the Infrastructure test context: only the
-/// entities exercised by the admin feature (Company/User) are mapped; the rest are ignored.
+/// Maps Company/User/Ticket/Conversation for tickets and admin feature tests.
 /// </summary>
 public class TestApplicationDbContext : DbContext, IApplicationDbContext
 {
@@ -33,6 +33,8 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
 
     public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
 
+    public DbSet<Ticket> Tickets => Set<Ticket>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Company>(builder =>
@@ -43,6 +45,7 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
             builder.Ignore(c => c.Users);
             builder.Ignore(c => c.Documents);
             builder.Ignore(c => c.Conversations);
+            builder.Ignore(c => c.Tickets);
         });
 
         modelBuilder.Entity<User>(builder =>
@@ -58,16 +61,52 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
             builder.Ignore(u => u.RefreshTokens);
             builder.Ignore(u => u.UploadedDocuments);
             builder.Ignore(u => u.Conversations);
+            builder.Ignore(u => u.CreatedTickets);
+            builder.Ignore(u => u.AssignedTickets);
             builder.HasOne(u => u.Company)
                 .WithMany()
                 .HasForeignKey(u => u.CompanyId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<Conversation>(builder =>
+        {
+            builder.HasKey(c => c.Id);
+            builder.Property(c => c.Title).IsRequired().HasMaxLength(200);
+            builder.Ignore(c => c.Messages);
+            builder.Ignore(c => c.Company);
+            builder.Ignore(c => c.User);
+        });
+
+        modelBuilder.Entity<Ticket>(builder =>
+        {
+            builder.HasKey(t => t.Id);
+            builder.Property(t => t.Subject).IsRequired().HasMaxLength(200);
+            builder.Property(t => t.Description).IsRequired().HasMaxLength(4000);
+            builder.Property(t => t.Priority).HasConversion<string>().HasMaxLength(50);
+            builder.Property(t => t.Status).HasConversion<string>().HasMaxLength(50);
+            builder.Property(t => t.Resolution).HasMaxLength(4000);
+            builder.HasOne(t => t.Company)
+                .WithMany()
+                .HasForeignKey(t => t.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne(t => t.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(t => t.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne(t => t.AssignedToUser)
+                .WithMany()
+                .HasForeignKey(t => t.AssignedToUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne(t => t.Conversation)
+                .WithMany()
+                .HasForeignKey(t => t.ConversationId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         modelBuilder.Ignore<RefreshToken>();
         modelBuilder.Ignore<Document>();
         modelBuilder.Ignore<DocumentChunk>();
-        modelBuilder.Ignore<Conversation>();
         modelBuilder.Ignore<ConversationMessage>();
     }
 }

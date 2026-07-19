@@ -8,6 +8,7 @@ import { ChatPage } from '../features/chat/ChatPage';
 import { CompaniesPage } from '../features/companies/CompaniesPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { DocumentsPage } from '../features/documents/DocumentsPage';
+import { TicketsPage } from '../features/tickets/TicketsPage';
 import { UsersPage } from '../features/users/UsersPage';
 import { PrivateLayout } from '../layouts/PrivateLayout';
 
@@ -33,6 +34,7 @@ export function AppRouter() {
             </Route>
             <Route path="/documents" element={<DocumentsPage />} />
             <Route path="/chat" element={<ChatPage />} />
+            <Route path="/tickets" element={<TicketsPage />} />
           </Route>
         </Route>
 

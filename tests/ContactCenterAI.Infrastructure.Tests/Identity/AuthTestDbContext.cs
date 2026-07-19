@@ -3,6 +3,7 @@ using ContactCenterAI.Domain.Chat;
 using ContactCenterAI.Domain.Documents;
 using ContactCenterAI.Domain.Identity;
 using ContactCenterAI.Domain.Tenancy;
+using ContactCenterAI.Domain.Tickets;
 using Microsoft.EntityFrameworkCore;
 
 namespace ContactCenterAI.Infrastructure.Tests.Identity;
@@ -28,6 +29,8 @@ public class AuthTestDbContext : DbContext, IApplicationDbContext
 
     public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
 
+    public DbSet<Ticket> Tickets => Set<Ticket>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Company>(builder =>
@@ -38,6 +41,7 @@ public class AuthTestDbContext : DbContext, IApplicationDbContext
             builder.Ignore(c => c.Users);
             builder.Ignore(c => c.Documents);
             builder.Ignore(c => c.Conversations);
+            builder.Ignore(c => c.Tickets);
         });
 
         modelBuilder.Entity<User>(builder =>
@@ -53,6 +57,8 @@ public class AuthTestDbContext : DbContext, IApplicationDbContext
             builder.Ignore(u => u.RefreshTokens);
             builder.Ignore(u => u.UploadedDocuments);
             builder.Ignore(u => u.Conversations);
+            builder.Ignore(u => u.CreatedTickets);
+            builder.Ignore(u => u.AssignedTickets);
             builder.HasOne(u => u.Company)
                 .WithMany()
                 .HasForeignKey(u => u.CompanyId)
@@ -64,5 +70,6 @@ public class AuthTestDbContext : DbContext, IApplicationDbContext
         modelBuilder.Ignore<DocumentChunk>();
         modelBuilder.Ignore<Conversation>();
         modelBuilder.Ignore<ConversationMessage>();
+        modelBuilder.Ignore<Ticket>();
     }
 }

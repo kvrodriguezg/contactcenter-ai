@@ -10,6 +10,7 @@ import {
 import Grid from '@mui/material/Grid2';
 import BusinessIcon from '@mui/icons-material/Business';
 import ChatIcon from '@mui/icons-material/Chat';
+import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import DescriptionIcon from '@mui/icons-material/Description';
 import GroupIcon from '@mui/icons-material/Group';
 import HistoryIcon from '@mui/icons-material/History';
@@ -21,6 +22,7 @@ const modules = [
   { title: 'Usuarios', description: 'Gestión de cuentas y roles', icon: <GroupIcon /> },
   { title: 'Documentos', description: 'Base de conocimiento', icon: <DescriptionIcon />, path: '/documents' },
   { title: 'Chat IA', description: 'Asistente inteligente RAG', icon: <ChatIcon />, path: '/chat' },
+  { title: 'Tickets', description: 'Escalamiento de consultas', icon: <ConfirmationNumberIcon />, path: '/tickets' },
   { title: 'Historial', description: 'Conversaciones registradas', icon: <HistoryIcon />, path: '/chat' },
 ];
 

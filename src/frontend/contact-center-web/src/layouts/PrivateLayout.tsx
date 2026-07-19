@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import BusinessIcon from '@mui/icons-material/Business';
 import ChatIcon from '@mui/icons-material/Chat';
+import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import DescriptionIcon from '@mui/icons-material/Description';
 import GroupIcon from '@mui/icons-material/Group';
@@ -30,6 +31,7 @@ const navItems = [
   { label: 'Usuarios', path: '/users', icon: <GroupIcon />, adminOnly: true },
   { label: 'Documentos', path: '/documents', icon: <DescriptionIcon />, adminOnly: false },
   { label: 'Chat IA', path: '/chat', icon: <ChatIcon />, adminOnly: false },
+  { label: 'Tickets', path: '/tickets', icon: <ConfirmationNumberIcon />, adminOnly: false },
 ];
 
 export function PrivateLayout() {
