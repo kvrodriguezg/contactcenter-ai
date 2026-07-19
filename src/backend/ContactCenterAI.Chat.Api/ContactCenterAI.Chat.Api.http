@@ -1,0 +1,6 @@
+@ContactCenterAI.Chat.Api_HostAddress = http://localhost:5124
+
+GET {{ContactCenterAI.Chat.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

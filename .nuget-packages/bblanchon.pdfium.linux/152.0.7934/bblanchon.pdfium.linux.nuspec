@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>bblanchon.PDFium.Linux</id>
+    <version>152.0.7934</version>
+    <authors>Benoît Blanchon</authors>
+    <owners>Benoît Blanchon</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">Apache-2.0</license>
+    <licenseUrl>https://licenses.nuget.org/Apache-2.0</licenseUrl>
+    <icon>icon.png</icon>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/bblanchon/pdfium-binaries</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/bblanchon/pdfium-binaries/master/nuget/bblanchon.PDFium.Linux.png</iconUrl>
+    <description>This package contains pre-compiled binaries of the PDFium library, an open-source library for PDF manipulation and rendering.</description>
+    <releaseNotes>https://github.com/bblanchon/pdfium-binaries/releases/tag/master</releaseNotes>
+    <copyright>Copyright © Benoît Blanchon 2017-2025</copyright>
+    <tags>PDFium PDF binaries library native Chromium</tags>
+    <repository type="git" url="https://github.com/bblanchon/pdfium-binaries.git" branch="master" commit="13937e77b9a5cf82a6cf915e2a16bbe1d75c7ec2" />
+    <dependencies>
+      <group targetFramework="native0.0" />
+      <group targetFramework=".NETStandard1.0" />
+    </dependencies>
+  </metadata>
+</package>

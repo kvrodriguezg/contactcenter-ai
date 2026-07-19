@@ -77,10 +77,15 @@ function SourcesPanel({ sources }: { sources: ChatSourceDto[] }) {
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap' }}>
               <Typography variant="body2" fontWeight={500}>
-                {source.originalFileName}
+                {source.documentName || source.originalFileName || 'Documento'}
               </Typography>
               <Chip label={`Chunk ${source.chunkIndex}`} size="small" variant="outlined" />
-              <Chip label={formatScore(source.score)} size="small" color="primary" variant="outlined" />
+              <Chip
+                label={formatScore(source.similarity ?? source.score ?? 0)}
+                size="small"
+                color="primary"
+                variant="outlined"
+              />
             </Stack>
           </AccordionSummary>
           <AccordionDetails>

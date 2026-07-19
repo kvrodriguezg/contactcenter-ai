@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Microsoft.SemanticKernel</id>
+    <version>1.47.0</version>
+    <title>Semantic Kernel</title>
+    <authors>Microsoft</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>icon.png</icon>
+    <readme>NUGET.md</readme>
+    <projectUrl>https://aka.ms/semantic-kernel</projectUrl>
+    <description>Semantic Kernel common package collection, including SK Core, OpenAI, Azure OpenAI, DALL-E 2.
+Empowers app owners to integrate cutting-edge LLM technology quickly and easily into their apps.</description>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <tags>AI, Artificial Intelligence, SDK</tags>
+    <repository type="git" url="https://github.com/microsoft/semantic-kernel" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="Microsoft.SemanticKernel.Connectors.AzureOpenAI" version="1.47.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.SemanticKernel.Core" version="1.47.0" include="All" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Microsoft.SemanticKernel.Connectors.AzureOpenAI" version="1.47.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.SemanticKernel.Core" version="1.47.0" include="All" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Extensions.DependencyInjection.EntityFrameworkCoreHealthChecksBuilderExtensions">
+            <summary>
+            <see cref="T:Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder"/> extension methods for Entity Framework Core.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.DependencyInjection.EntityFrameworkCoreHealthChecksBuilderExtensions.AddDbContextCheck``1(Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder,System.String,System.Nullable{Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus},System.Collections.Generic.IEnumerable{System.String},System.Func{``0,System.Threading.CancellationToken,System.Threading.Tasks.Task{System.Boolean}})">
+            <summary>
+            Adds a health check for the specified <see cref="T:Microsoft.EntityFrameworkCore.DbContext"/> type.
+            </summary>
+            <typeparam name="TContext">The <see cref="T:Microsoft.EntityFrameworkCore.DbContext"/> type.</typeparam>
+            <param name="builder">The <see cref="T:Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder"/>.</param>
+            <param name="name">
+            The health check name. Optional. If <c>null</c> the type name of <typeparamref name="TContext"/> will be used for the name.
+            </param>
+            <param name="failureStatus">
+            The <see cref="T:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus"/> that should be reported when the health check fails. Optional. If <c>null</c> then
+            the default status of <see cref="F:Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy"/> will be reported.
+            </param>
+            <param name="tags">A list of tags that can be used to filter sets of health checks. Optional.</param>
+            <param name="customTestQuery">
+            A custom test query that will be executed when the health check executes to test the health of the database
+            connection and configurations.
+            </param>
+            <returns>The <see cref="T:Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder"/>.</returns>
+            <remarks>
+            <para>
+            The health check implementation added by this method will use the dependency injection container
+            to create an instance of <typeparamref name="TContext"/>.
+            </para>
+            <para>
+            By default the health check implementation will use the <see cref="M:Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade.CanConnectAsync(System.Threading.CancellationToken)"/> method
+            to test connectivity to the database. This method requires that the database provider has correctly implemented the
+            <see cref="T:Microsoft.EntityFrameworkCore.Storage.IDatabaseCreator" /> interface. If the database provider has not implemented this interface
+            then the health check will report a failure.
+            </para>
+            <para>
+            Providing a <paramref name="customTestQuery" /> will replace the use of <see cref="M:Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade.CanConnectAsync(System.Threading.CancellationToken)"/>
+            to test database connectivity. An implementation of a test query should handle exceptions that can arise due to connectivity failure,
+            and should return a pass/fail result. The test query should be be designed to complete in a short and predicatable amount of time.
+            </para>
+            </remarks>
+        </member>
+    </members>
+</doc>

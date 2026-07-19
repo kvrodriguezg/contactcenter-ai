@@ -1,9 +1,13 @@
 export type ChatSourceDto = {
   documentId: string;
-  originalFileName: string;
+  documentName?: string;
+  originalFileName?: string;
+  chunkId?: string;
   chunkIndex: number;
   contentPreview: string;
-  score: number;
+  similarity?: number;
+  score?: number;
+  pageNumber?: number | null;
 };
 
 export type AskQuestionRequest = {
@@ -23,8 +27,10 @@ export type AskQuestionResponse = {
 export type ConversationDto = {
   id: string;
   companyId: string;
-  companyName: string;
-  userId: string;
+  companyName?: string;
+  userId?: string;
+  externalUserId?: string;
+  userEmail?: string;
   title: string;
   createdAt: string;
   updatedAt?: string | null;
@@ -41,8 +47,10 @@ export type ConversationMessageDto = {
 export type ConversationDetailDto = {
   id: string;
   companyId: string;
-  companyName: string;
-  userId: string;
+  companyName?: string;
+  userId?: string;
+  externalUserId?: string;
+  userEmail?: string;
   title: string;
   createdAt: string;
   updatedAt?: string | null;

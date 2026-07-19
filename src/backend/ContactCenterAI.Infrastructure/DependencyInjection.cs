@@ -5,6 +5,7 @@ using ContactCenterAI.Infrastructure.Persistence;
 using ContactCenterAI.Infrastructure.Storage;
 using ContactCenterAI.Infrastructure.Documents;
 using ContactCenterAI.Infrastructure.Ai;
+using ContactCenterAI.Infrastructure.Chat;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -30,6 +31,10 @@ public static class DependencyInjection
         services.AddSingleton(auth0Settings);
         services.AddSingleton(Options.Create(authenticationSettings));
         services.AddSingleton(Options.Create(auth0Settings));
+
+        var chatServiceSettings = ChatServiceConfiguration.Resolve(configuration);
+        services.AddSingleton(chatServiceSettings);
+        services.AddSingleton(Options.Create(chatServiceSettings));
 
         services.Configure<DocumentStorageSettings>(
             configuration.GetSection(DocumentStorageSettings.SectionName));

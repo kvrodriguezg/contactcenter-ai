@@ -43,6 +43,7 @@ public class SemanticSearchService : ISemanticSearchService
 
         const string sql = """
             SELECT
+                c."Id" AS "ChunkId",
                 c."DocumentId" AS "DocumentId",
                 d."OriginalFileName" AS "OriginalFileName",
                 c."ChunkIndex" AS "ChunkIndex",
@@ -79,14 +80,21 @@ public class SemanticSearchService : ISemanticSearchService
             var preview = content.Length <= ContentPreviewLength
                 ? content
                 : content[..ContentPreviewLength];
+            var fileName = reader.GetString(reader.GetOrdinal("OriginalFileName"));
+            var score = reader.GetDouble(reader.GetOrdinal("Score"));
 
             results.Add(new SemanticSearchResultDto
             {
+                ChunkId = reader.GetGuid(reader.GetOrdinal("ChunkId")),
                 DocumentId = reader.GetGuid(reader.GetOrdinal("DocumentId")),
-                OriginalFileName = reader.GetString(reader.GetOrdinal("OriginalFileName")),
+                DocumentName = fileName,
+                OriginalFileName = fileName,
                 ChunkIndex = reader.GetInt32(reader.GetOrdinal("ChunkIndex")),
+                Content = content,
                 ContentPreview = preview,
-                Score = reader.GetDouble(reader.GetOrdinal("Score"))
+                Similarity = score,
+                Score = score,
+                PageNumber = null
             });
         }
 
