@@ -18,6 +18,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import DescriptionIcon from '@mui/icons-material/Description';
 import GroupIcon from '@mui/icons-material/Group';
 import LogoutIcon from '@mui/icons-material/Logout';
+import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../features/auth/useAuth';
 
@@ -29,6 +30,7 @@ const navItems = [
   { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon />, adminOnly: false },
   { label: 'Empresas', path: '/companies', icon: <BusinessIcon />, adminOnly: true },
   { label: 'Usuarios', path: '/users', icon: <GroupIcon />, adminOnly: true },
+  { label: 'Resumen GQL', path: '/company-summary', icon: <QueryStatsIcon />, adminOnly: true },
   { label: 'Documentos', path: '/documents', icon: <DescriptionIcon />, adminOnly: false },
   { label: 'Chat IA', path: '/chat', icon: <ChatIcon />, adminOnly: false },
   { label: 'Tickets', path: '/tickets', icon: <ConfirmationNumberIcon />, adminOnly: false },

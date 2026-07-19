@@ -4,6 +4,7 @@ import { AuthProvider } from '../features/auth/AuthContext';
 import { GuestRoute } from '../features/auth/GuestRoute';
 import { LoginPage } from '../features/auth/LoginPage';
 import { ProtectedRoute } from '../features/auth/ProtectedRoute';
+import { CompanySummaryPage } from '../features/bff/CompanySummaryPage';
 import { ChatPage } from '../features/chat/ChatPage';
 import { CompaniesPage } from '../features/companies/CompaniesPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
@@ -31,6 +32,7 @@ export function AppRouter() {
             <Route element={<AdminRoute />}>
               <Route path="/companies" element={<CompaniesPage />} />
               <Route path="/users" element={<UsersPage />} />
+              <Route path="/company-summary" element={<CompanySummaryPage />} />
             </Route>
             <Route path="/documents" element={<DocumentsPage />} />
             <Route path="/chat" element={<ChatPage />} />

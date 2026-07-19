@@ -129,6 +129,39 @@ services:
       db:
         condition: service_healthy
 
+  bff:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.bff
+    container_name: contactcenterai-bff
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:8080
+      CoreApi__BaseUrl: http://api:8080
+      ChatApi__BaseUrl: http://chat-api:8080
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-Local}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://contactcenterai-api}
+      Jwt__Issuer: ${JWT_ISSUER:-ContactCenterAI}
+      Jwt__Audience: ${JWT_AUDIENCE:-ContactCenterAI.Client}
+      Jwt__SecretKey: ${JWT_SECRET_KEY:-DEV_ONLY_SECRET_KEY_CHANGE_IN_PRODUCTION_123456}
+      Cors__Origins__0: ${WEB_ORIGIN:-http://localhost:5173}
+    ports:
+      - "${BFF_PORT:-8082}:8080"
+    volumes:
+      - bff_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    depends_on:
+      api:
+        condition: service_started
+      chat-api:
+        condition: service_started
+
   web:
     build:
       context: .
@@ -142,12 +175,14 @@ services:
         VITE_AUTH0_REDIRECT_URI: ${VITE_AUTH0_REDIRECT_URI}
         VITE_CHAT_SERVICE_MODE: ${VITE_CHAT_SERVICE_MODE}
         VITE_CHAT_API_BASE_URL: ${VITE_CHAT_API_BASE_URL}
+        VITE_BFF_GRAPHQL_URL: ${VITE_BFF_GRAPHQL_URL:-http://localhost:8082/graphql}
     container_name: contactcenterai-web
     ports:
       - "${WEB_PORT:-5173}:80"
     depends_on:
       - api
       - chat-api
+      - bff
 
 volumes:
   postgres_data:
@@ -156,3 +191,4 @@ volumes:
   api_logs:
   chat_api_logs:
   worker_logs:
+  bff_logs:
