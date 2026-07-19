@@ -104,8 +104,20 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<Document>(builder =>
+        {
+            builder.HasKey(d => d.Id);
+            builder.Property(d => d.FileName).IsRequired().HasMaxLength(260);
+            builder.Property(d => d.OriginalFileName).IsRequired().HasMaxLength(260);
+            builder.Property(d => d.ContentType).IsRequired().HasMaxLength(100);
+            builder.Property(d => d.StoragePath).IsRequired().HasMaxLength(500);
+            builder.Property(d => d.Status).HasConversion<string>().HasMaxLength(50);
+            builder.Ignore(d => d.Company);
+            builder.Ignore(d => d.UploadedByUser);
+            builder.Ignore(d => d.Chunks);
+        });
+
         modelBuilder.Ignore<RefreshToken>();
-        modelBuilder.Ignore<Document>();
         modelBuilder.Ignore<DocumentChunk>();
         modelBuilder.Ignore<ConversationMessage>();
     }

@@ -1,5 +1,6 @@
 using ContactCenterAI.Application;
 using ContactCenterAI.Infrastructure;
+using ContactCenterAI.Infrastructure.Messaging;
 using ContactCenterAI.Worker;
 using Serilog;
 
@@ -20,6 +21,7 @@ try
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
     builder.Services.AddHostedService<Worker>();
+    builder.Services.AddMessagingConsumers(builder.Configuration);
 
     var host = builder.Build();
     await host.RunAsync();

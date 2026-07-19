@@ -102,7 +102,9 @@ internal static class TicketAuthorization
         Resolution = ticket.Resolution,
         CreatedAt = ticket.CreatedAt,
         UpdatedAt = ticket.UpdatedAt,
-        ResolvedAt = ticket.ResolvedAt
+        ResolvedAt = ticket.ResolvedAt,
+        EscalationProcessedAt = ticket.EscalationProcessedAt,
+        EscalationStatus = ticket.EscalationStatus
     };
 
     public static IQueryable<Ticket> IncludeDetails(IQueryable<Ticket> query) =>

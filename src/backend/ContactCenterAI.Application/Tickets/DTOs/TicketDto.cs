@@ -37,4 +37,8 @@ public class TicketDto
     public DateTime? UpdatedAt { get; set; }
 
     public DateTime? ResolvedAt { get; set; }
+
+    public DateTime? EscalationProcessedAt { get; set; }
+
+    public string? EscalationStatus { get; set; }
 }

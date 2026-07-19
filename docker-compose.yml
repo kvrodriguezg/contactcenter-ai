@@ -40,6 +40,13 @@ services:
       Gemini__EmbeddingDimensions: ${GEMINI_EMBEDDING_DIMENSIONS:-1536}
       DocumentStorage__BasePath: /app/storage/documents
       CHAT_SERVICE_MODE: ${CHAT_SERVICE_MODE:-Embedded}
+      Messaging__Enabled: ${MESSAGING_ENABLED:-false}
+      RabbitMq__Host: ${RABBITMQ_HOST:-rabbitmq}
+      RabbitMq__Port: ${RABBITMQ_PORT:-5672}
+      RabbitMq__UserName: ${RABBITMQ_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:-guest}
+      RabbitMq__VirtualHost: ${RABBITMQ_VHOST:-/}
+      RabbitMq__ClientProvidedName: contactcenterai-api
     ports:
       - "${API_PORT:-8080}:8080"
     volumes:
@@ -47,6 +54,8 @@ services:
       - api_logs:/app/logs
     depends_on:
       db:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   chat-db:
@@ -118,15 +127,26 @@ services:
       Gemini__ChatModel: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
       Gemini__EmbeddingDimensions: ${GEMINI_EMBEDDING_DIMENSIONS:-1536}
       DocumentStorage__BasePath: /app/storage/documents
-      DocumentProcessing__IntervalSeconds: 30
+      DocumentProcessing__IntervalSeconds: ${DOCUMENT_PROCESSING_INTERVAL_SECONDS:-30}
       DocumentProcessing__ChunkSize: 1000
       DocumentProcessing__ChunkOverlap: 150
       DocumentProcessing__BatchSize: 5
+      # When Messaging is on, default polling off to avoid constant scans; set true for reconciliation.
+      DocumentProcessing__PollingEnabled: ${DOCUMENT_PROCESSING_POLLING_ENABLED:-true}
+      Messaging__Enabled: ${MESSAGING_ENABLED:-false}
+      RabbitMq__Host: ${RABBITMQ_HOST:-rabbitmq}
+      RabbitMq__Port: ${RABBITMQ_PORT:-5672}
+      RabbitMq__UserName: ${RABBITMQ_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:-guest}
+      RabbitMq__VirtualHost: ${RABBITMQ_VHOST:-/}
+      RabbitMq__ClientProvidedName: contactcenterai-worker
     volumes:
       - documents_data:/app/storage/documents
       - worker_logs:/app/logs
     depends_on:
       db:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   bff:
@@ -184,6 +204,30 @@ services:
       - chat-api
       - bff
 
+  # RabbitMQ broker for event-oriented document processing and ticket escalation (feature 5).
+  # Durable exchange/queues are declared by the app on startup; guest/guest is LOCAL ONLY.
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: contactcenterai-rabbitmq
+    hostname: contactcenterai-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+    ports:
+      # AMQP: reachable on the compose network; host mapping is for local tooling only.
+      - "${RABBITMQ_PORT:-5672}:5672"
+      # Management UI: loopback-only (local/restricted). Do not expose publicly in production.
+      - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
 volumes:
   postgres_data:
   chat_postgres_data:
@@ -192,3 +236,4 @@ volumes:
   chat_api_logs:
   worker_logs:
   bff_logs:
+  rabbitmq_data:

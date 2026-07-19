@@ -74,6 +74,7 @@ public class CreateTicketCommandHandler : IRequestHandler<CreateTicketCommand, T
         _context.Tickets.Add(ticket);
         await _context.SaveChangesAsync(cancellationToken);
 
+        var correlationId = Guid.NewGuid();
         await _ticketEventPublisher.PublishTicketCreatedAsync(
             new TicketCreatedEvent(
                 ticket.Id,
@@ -81,7 +82,8 @@ public class CreateTicketCommandHandler : IRequestHandler<CreateTicketCommand, T
                 ticket.CreatedByUserId,
                 ticket.Subject,
                 ticket.Priority.ToString(),
-                now),
+                now,
+                correlationId),
             cancellationToken);
 
         var created = await TicketAuthorization.IncludeDetails(_context.Tickets.AsNoTracking())

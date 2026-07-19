@@ -34,4 +34,14 @@ public class Ticket : AuditableEntity
     public string? Resolution { get; set; }
 
     public DateTime? ResolvedAt { get; set; }
+
+    /// <summary>
+    /// UTC timestamp of the async escalation stage (Worker). Null until processed; set once for idempotency.
+    /// </summary>
+    public DateTime? EscalationProcessedAt { get; set; }
+
+    /// <summary>
+    /// Observable escalation outcome (e.g. PreparedForAssignment). Null until the Worker consumes the event.
+    /// </summary>
+    public string? EscalationStatus { get; set; }
 }

@@ -3,7 +3,7 @@ using ContactCenterAI.Application.Tickets.Events;
 namespace ContactCenterAI.Application.Common.Interfaces;
 
 /// <summary>
-/// Publishes ticket domain events. Default implementation is a no-op until messaging is wired.
+/// Publishes ticket domain events via <see cref="IEventPublisher"/> (RabbitMQ or no-op).
 /// </summary>
 public interface ITicketEventPublisher
 {

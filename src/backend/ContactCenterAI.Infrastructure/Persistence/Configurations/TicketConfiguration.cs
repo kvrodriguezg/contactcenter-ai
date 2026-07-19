@@ -40,6 +40,11 @@ public class TicketConfiguration : IEntityTypeConfiguration<Ticket>
 
         builder.Property(t => t.ResolvedAt);
 
+        builder.Property(t => t.EscalationProcessedAt);
+
+        builder.Property(t => t.EscalationStatus)
+            .HasMaxLength(100);
+
         builder.HasIndex(t => t.CompanyId);
 
         builder.HasIndex(t => t.Status);
