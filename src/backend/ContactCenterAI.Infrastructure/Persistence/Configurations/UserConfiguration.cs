@@ -28,6 +28,17 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.IsActive)
             .IsRequired();
 
+        builder.Property(u => u.ExternalSubject)
+            .HasMaxLength(256);
+
+        builder.Property(u => u.AuthenticationProvider)
+            .IsRequired()
+            .HasConversion<string>()
+            .HasMaxLength(50)
+            .HasDefaultValue(AuthenticationProvider.Local);
+
+        builder.Property(u => u.LastLoginAt);
+
         builder.Property(u => u.CreatedAt)
             .IsRequired();
 
@@ -35,6 +46,10 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasIndex(u => u.Email)
             .IsUnique();
+
+        builder.HasIndex(u => u.ExternalSubject)
+            .IsUnique()
+            .HasFilter("\"ExternalSubject\" IS NOT NULL");
 
         builder.HasIndex(u => u.CompanyId);
 

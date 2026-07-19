@@ -29,9 +29,17 @@ services:
       Jwt__Issuer: ${JWT_ISSUER:-ContactCenterAI}
       Jwt__Audience: ${JWT_AUDIENCE:-ContactCenterAI.Client}
       Jwt__SecretKey: ${JWT_SECRET_KEY:-DEV_ONLY_SECRET_KEY_CHANGE_IN_PRODUCTION_123456}
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-Local}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://contactcenterai-api}
       Cors__Origins__0: ${WEB_ORIGIN:-http://localhost:5173}
-      OpenAI__ApiKey: ${OPENAI_API_KEY:-}
-      Storage__DocumentsPath: /app/storage/documents
+      Ai__Provider: ${AI_PROVIDER:-Gemini}
+      Gemini__ApiKey: ${GEMINI_API_KEY:-}
+      Gemini__EmbeddingsModel: ${GEMINI_EMBEDDINGS_MODEL:-gemini-embedding-001}
+      Gemini__ChatModel: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
+      Gemini__EmbeddingDimensions: ${GEMINI_EMBEDDING_DIMENSIONS:-1536}
+      DocumentStorage__BasePath: /app/storage/documents
+      CHAT_SERVICE_MODE: ${CHAT_SERVICE_MODE:-Embedded}
     ports:
       - "${API_PORT:-8080}:8080"
     volumes:
@@ -40,6 +48,58 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+  chat-db:
+    image: postgres:16-alpine
+    container_name: contactcenterai-chat-db
+    environment:
+      POSTGRES_DB: ${CHAT_POSTGRES_DB:-contactcenterai_chat}
+      POSTGRES_USER: ${CHAT_POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${CHAT_POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${CHAT_POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - chat_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CHAT_POSTGRES_USER:-postgres} -d ${CHAT_POSTGRES_DB:-contactcenterai_chat}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  chat-api:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.chat-api
+    container_name: contactcenterai-chat-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__ChatDatabase: Host=chat-db;Port=5432;Database=${CHAT_POSTGRES_DB:-contactcenterai_chat};Username=${CHAT_POSTGRES_USER:-postgres};Password=${CHAT_POSTGRES_PASSWORD:-postgres}
+      CoreApi__BaseUrl: http://api:8080
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-Local}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://contactcenterai-api}
+      Jwt__Issuer: ${JWT_ISSUER:-ContactCenterAI}
+      Jwt__Audience: ${JWT_AUDIENCE:-ContactCenterAI.Client}
+      Jwt__SecretKey: ${JWT_SECRET_KEY:-DEV_ONLY_SECRET_KEY_CHANGE_IN_PRODUCTION_123456}
+      Cors__Origins__0: ${WEB_ORIGIN:-http://localhost:5173}
+      Gemini__ApiKey: ${GEMINI_API_KEY:-}
+      Gemini__ChatModel: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
+    ports:
+      - "${CHAT_API_PORT:-8081}:8080"
+    volumes:
+      - chat_api_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    depends_on:
+      chat-db:
+        condition: service_healthy
+      api:
+        condition: service_started
 
   worker:
     build:
@@ -52,8 +112,16 @@ services:
       Jwt__Issuer: ${JWT_ISSUER:-ContactCenterAI}
       Jwt__Audience: ${JWT_AUDIENCE:-ContactCenterAI.Client}
       Jwt__SecretKey: ${JWT_SECRET_KEY:-DEV_ONLY_SECRET_KEY_CHANGE_IN_PRODUCTION_123456}
-      OpenAI__ApiKey: ${OPENAI_API_KEY:-}
-      Storage__DocumentsPath: /app/storage/documents
+      Ai__Provider: ${AI_PROVIDER:-Gemini}
+      Gemini__ApiKey: ${GEMINI_API_KEY:-}
+      Gemini__EmbeddingsModel: ${GEMINI_EMBEDDINGS_MODEL:-gemini-embedding-001}
+      Gemini__ChatModel: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
+      Gemini__EmbeddingDimensions: ${GEMINI_EMBEDDING_DIMENSIONS:-1536}
+      DocumentStorage__BasePath: /app/storage/documents
+      DocumentProcessing__IntervalSeconds: 30
+      DocumentProcessing__ChunkSize: 1000
+      DocumentProcessing__ChunkOverlap: 150
+      DocumentProcessing__BatchSize: 5
     volumes:
       - documents_data:/app/storage/documents
       - worker_logs:/app/logs
@@ -66,15 +134,25 @@ services:
       context: .
       dockerfile: deploy/docker/Dockerfile.web
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_AUTH_PROVIDER: ${VITE_AUTH_PROVIDER}
+        VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN}
+        VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID}
+        VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE}
+        VITE_AUTH0_REDIRECT_URI: ${VITE_AUTH0_REDIRECT_URI}
+        VITE_CHAT_SERVICE_MODE: ${VITE_CHAT_SERVICE_MODE}
+        VITE_CHAT_API_BASE_URL: ${VITE_CHAT_API_BASE_URL}
     container_name: contactcenterai-web
     ports:
       - "${WEB_PORT:-5173}:80"
     depends_on:
       - api
+      - chat-api
 
 volumes:
   postgres_data:
+  chat_postgres_data:
   documents_data:
   api_logs:
+  chat_api_logs:
   worker_logs:

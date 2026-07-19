@@ -22,7 +22,9 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, C
     {
         if (_currentUserService.UserId is null)
         {
-            throw new UnauthorizedAccessException("Usuario no autenticado.");
+            throw new UnauthorizedAccessException(
+                _currentUserService.AuthorizationFailureMessage
+                ?? "Usuario no autenticado.");
         }
 
         var user = await _context.Users
@@ -33,6 +35,11 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, C
         if (user is null)
         {
             throw new UnauthorizedAccessException("Usuario no encontrado.");
+        }
+
+        if (!user.IsActive)
+        {
+            throw new UnauthorizedAccessException("El usuario está inactivo.");
         }
 
         return new CurrentUserDto

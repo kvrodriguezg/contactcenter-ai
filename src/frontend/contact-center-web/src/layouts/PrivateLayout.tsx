@@ -12,7 +12,9 @@ import {
   Typography,
 } from '@mui/material';
 import BusinessIcon from '@mui/icons-material/Business';
+import ChatIcon from '@mui/icons-material/Chat';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import DescriptionIcon from '@mui/icons-material/Description';
 import GroupIcon from '@mui/icons-material/Group';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { NavLink, Outlet } from 'react-router-dom';
@@ -24,6 +26,8 @@ const navItems = [
   { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
   { label: 'Empresas', path: '/companies', icon: <BusinessIcon /> },
   { label: 'Usuarios', path: '/users', icon: <GroupIcon /> },
+  { label: 'Documentos', path: '/documents', icon: <DescriptionIcon /> },
+  { label: 'Chat IA', path: '/chat', icon: <ChatIcon /> },
 ];
 
 export function PrivateLayout() {

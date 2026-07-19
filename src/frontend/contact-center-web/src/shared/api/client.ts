@@ -1,5 +1,6 @@
+import { getTokenProvider } from '../../features/auth/tokenProvider';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
-const TOKEN_KEY = 'contactcenterai_access_token';
 
 type RequestOptions = {
   skipAuth?: boolean;
@@ -13,18 +14,6 @@ export function setOnUnauthorized(handler: () => void) {
   onUnauthorized = handler;
 }
 
-export function getAccessToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-export function setAccessToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-export function clearAccessToken() {
-  localStorage.removeItem(TOKEN_KEY);
-}
-
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = {
     Accept: 'application/json',
@@ -35,7 +24,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   if (!options.skipAuth) {
-    const token = getAccessToken();
+    const token = await getTokenProvider().getToken();
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
@@ -49,7 +38,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (response.status === 401) {
     if (!options.skipAuth) {
-      clearAccessToken();
+      getTokenProvider().clearToken();
       onUnauthorized?.();
     }
     let message = 'No autorizado';
@@ -94,6 +83,59 @@ export function apiPost<T>(
   options?: { skipAuth?: boolean },
 ): Promise<T> {
   return request<T>(path, { body, skipAuth: options?.skipAuth });
+}
+
+async function parseErrorMessage(response: Response): Promise<string> {
+  try {
+    const data = (await response.json()) as {
+      message?: string;
+      errors?: Record<string, string[]>;
+    };
+
+    if (data.errors) {
+      const messages = Object.values(data.errors).flat();
+      if (messages.length > 0) {
+        return messages.join(' ');
+      }
+    }
+
+    if (data.message) {
+      return data.message;
+    }
+  } catch {
+    // Sin cuerpo JSON.
+  }
+
+  return `Error ${response.status}`;
+}
+
+export async function apiPostFormData<T>(path: string, formData: FormData): Promise<T> {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  };
+
+  const token = await getTokenProvider().getToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  if (response.status === 401) {
+    getTokenProvider().clearToken();
+    onUnauthorized?.();
+    throw new Error(await parseErrorMessage(response));
+  }
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response));
+  }
+
+  return response.json() as Promise<T>;
 }
 
 export { API_BASE_URL };

@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using ContactCenterAI.Application.Common.Interfaces;
 using ContactCenterAI.Domain.Identity;
 using Microsoft.AspNetCore.Http;
@@ -14,36 +13,21 @@ public class CurrentUserService : ICurrentUserService
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public bool IsAuthenticated =>
-        _httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
+    private LocalUserContext? LocalUser =>
+        _httpContextAccessor.HttpContext?.Items[LocalUserContextKeys.Resolution] as LocalUserContext;
 
-    public Guid? UserId
-    {
-        get
-        {
-            var userId = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
-            return Guid.TryParse(userId, out var id) ? id : null;
-        }
-    }
+    public bool IsAuthenticated => LocalUser?.IsResolved == true;
 
-    public string? Email =>
-        _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Email);
+    public Guid? UserId => LocalUser?.UserId;
 
-    public Role? Role
-    {
-        get
-        {
-            var role = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Role);
-            return Enum.TryParse<Role>(role, out var parsedRole) ? parsedRole : null;
-        }
-    }
+    public string? Email => LocalUser?.Email;
 
-    public Guid? CompanyId
-    {
-        get
-        {
-            var companyId = _httpContextAccessor.HttpContext?.User?.FindFirstValue("companyId");
-            return Guid.TryParse(companyId, out var id) ? id : null;
-        }
-    }
+    public Role? Role => LocalUser?.Role;
+
+    public Guid? CompanyId => LocalUser?.CompanyId;
+
+    public string? AuthorizationFailureMessage =>
+        LocalUser is { IsResolved: false }
+            ? LocalUser.Resolution.ErrorMessage
+            : null;
 }

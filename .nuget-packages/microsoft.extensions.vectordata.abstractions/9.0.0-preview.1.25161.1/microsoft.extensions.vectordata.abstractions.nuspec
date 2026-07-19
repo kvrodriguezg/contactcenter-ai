@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Microsoft.Extensions.VectorData.Abstractions</id>
+    <version>9.0.0-preview.1.25161.1</version>
+    <title>Microsoft.Extensions.VectorData.Abstractions</title>
+    <authors>Microsoft</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>neticon.png</icon>
+    <readme>PACKAGE.md</readme>
+    <projectUrl>https://dot.net/</projectUrl>
+    <description>Abstractions for vector database access.
+
+Commonly Used Types:
+Microsoft.Extensions.VectorData.IVectorStore
+Microsoft.Extensions.VectorData.IVectorStoreRecordCollection&lt;TKey, TRecord&gt;</description>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <tags>Vector, Database, SDK</tags>
+    <repository type="git" url="https://github.com/microsoft/semantic-kernel" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.2">
+        <dependency id="Microsoft.Bcl.AsyncInterfaces" version="8.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net8.0" />
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Microsoft.Bcl.AsyncInterfaces" version="8.0.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

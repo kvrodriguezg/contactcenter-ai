@@ -23,8 +23,8 @@ TestResults/
 logs/
 *.log
 
-# Storage
-storage/
+# Storage (archivos subidos, no código fuente)
+/storage/
 **/storage/documents/
 
 # Environment
@@ -64,3 +64,11 @@ TestResults/
 *.key
 secrets.json
 .cursor/
+.env
+.env.local
+.env.development
+.env.production
+*.secrets
+
+# Local tooling
+.tools/

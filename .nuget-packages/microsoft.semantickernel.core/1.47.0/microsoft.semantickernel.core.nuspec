@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Microsoft.SemanticKernel.Core</id>
+    <version>1.47.0</version>
+    <title>Semantic Kernel Core</title>
+    <authors>Microsoft</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>icon.png</icon>
+    <readme>NUGET.md</readme>
+    <projectUrl>https://aka.ms/semantic-kernel</projectUrl>
+    <description>Semantic Kernel core orchestration, runtime and functions.
+      This package is automatically installed by 'Microsoft.SemanticKernel' package with other useful packages.
+      Install this package manually only if you are selecting individual Semantic Kernel components.</description>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <tags>AI, Artificial Intelligence, SDK</tags>
+    <repository type="git" url="https://github.com/microsoft/semantic-kernel" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="Microsoft.SemanticKernel.Abstractions" version="1.47.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.DependencyInjection" version="8.0.1" exclude="Build,Analyzers" />
+        <dependency id="System.Numerics.Tensors" version="9.0.0" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Json" version="8.0.5" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Microsoft.SemanticKernel.Abstractions" version="1.47.0" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.DependencyInjection" version="8.0.1" exclude="Build,Analyzers" />
+        <dependency id="System.Numerics.Tensors" version="9.0.0" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Json" version="8.0.5" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

@@ -1,0 +1,34 @@
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+COPY src/backend/ContactCenterAI.Chat.Domain/ContactCenterAI.Chat.Domain.csproj ContactCenterAI.Chat.Domain/
+COPY src/backend/ContactCenterAI.Chat.Application/ContactCenterAI.Chat.Application.csproj ContactCenterAI.Chat.Application/
+COPY src/backend/ContactCenterAI.Chat.Infrastructure/ContactCenterAI.Chat.Infrastructure.csproj ContactCenterAI.Chat.Infrastructure/
+COPY src/backend/ContactCenterAI.Chat.Api/ContactCenterAI.Chat.Api.csproj ContactCenterAI.Chat.Api/
+
+RUN dotnet restore ContactCenterAI.Chat.Api/ContactCenterAI.Chat.Api.csproj
+
+COPY src/backend/ContactCenterAI.Chat.Domain/ ContactCenterAI.Chat.Domain/
+COPY src/backend/ContactCenterAI.Chat.Application/ ContactCenterAI.Chat.Application/
+COPY src/backend/ContactCenterAI.Chat.Infrastructure/ ContactCenterAI.Chat.Infrastructure/
+COPY src/backend/ContactCenterAI.Chat.Api/ ContactCenterAI.Chat.Api/
+
+RUN dotnet publish ContactCenterAI.Chat.Api/ContactCenterAI.Chat.Api.csproj -c Release -o /app/publish /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /app/logs
+
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
+
+COPY --from=build /app/publish .
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=10 \
+  CMD curl -f http://localhost:8080/health || exit 1
+
+ENTRYPOINT ["dotnet", "ContactCenterAI.Chat.Api.dll"]
