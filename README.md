@@ -178,13 +178,22 @@ npm run build
 
 ## CI/CD
 
-**Integración continua (implementado):** GitHub Actions ejecuta en cada push/PR a `main`, `master` y `develop`:
+**Integración continua (CI):** GitHub Actions (`.github/workflows/ci.yml`) ejecuta en cada push/PR a `main`, `master` y `develop`:
 
 - `dotnet restore`, `build` y `test` del backend
 - `npm ci` y `build` del frontend
 - Build de imágenes Docker (api, worker, web)
 
-**Despliegue continuo:** Pendiente. El despliegue a AWS EC2 está planificado; aún no existe pipeline de CD en el repositorio.
+**Despliegue continuo (CD):** GitHub Actions (`.github/workflows/deploy.yml`) despliega hacia AWS EC2.
+
+- Se activa automáticamente con **push a `main`**
+- También puede ejecutarse **manualmente** (`workflow_dispatch`)
+- Secrets requeridos en el repositorio (sin valores en Git):
+  - `EC2_HOST`
+  - `EC2_USER`
+  - `EC2_SSH_KEY`
+- El archivo `.env` de producción **permanece únicamente en la instancia EC2**; el workflow no lo crea ni lo sobrescribe
+- En EC2 se espera el clon del repositorio en `${HOME}/contactcenter-ai` (variable `PROJECT_PATH` del workflow; ajustable según la máquina)
 
 ## Decisión de proveedor de IA
 
@@ -205,6 +214,4 @@ La configuración se realiza mediante variables de entorno. No se hardcodean cla
 
 ## Pendiente
 
-- Frontend de chat RAG (backend implementado)
-- Despliegue continuo a AWS EC2
 - Índice vectorial HNSW para optimización de búsqueda semántica
