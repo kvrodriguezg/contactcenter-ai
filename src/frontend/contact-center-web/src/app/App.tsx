@@ -1,15 +1,25 @@
 import { Auth0Provider } from '@auth0/auth0-react';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import type { ReactNode } from 'react';
-import { BrowserRouter } from 'react-router-dom';
-import { auth0Config, isAuth0Mode } from '../features/auth/authConfig';
+import { BrowserRouter, useNavigate } from 'react-router-dom';
+import {
+  auth0Config,
+  isAuth0Configured,
+  isAuth0Mode,
+} from '../features/auth/authConfig';
 import { AppRouter } from './router';
 import { appTheme } from './theme';
 
-function Auth0Root({ children }: { children: ReactNode }) {
-  if (!isAuth0Mode) {
+function Auth0ProviderWithNavigate({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
+
+  if (!isAuth0Mode || !isAuth0Configured()) {
     return children;
   }
+
+  const onRedirectCallback = (appState?: { returnTo?: string }) => {
+    navigate(appState?.returnTo || '/dashboard', { replace: true });
+  };
 
   return (
     <Auth0Provider
@@ -19,8 +29,9 @@ function Auth0Root({ children }: { children: ReactNode }) {
         redirect_uri: auth0Config.redirectUri,
         audience: auth0Config.audience,
       }}
-      cacheLocation="memory"
+      cacheLocation="localstorage"
       useRefreshTokens={false}
+      onRedirectCallback={onRedirectCallback}
     >
       {children}
     </Auth0Provider>
@@ -31,11 +42,11 @@ function App() {
   return (
     <ThemeProvider theme={appTheme}>
       <CssBaseline />
-      <Auth0Root>
-        <BrowserRouter>
+      <BrowserRouter>
+        <Auth0ProviderWithNavigate>
           <AppRouter />
-        </BrowserRouter>
-      </Auth0Root>
+        </Auth0ProviderWithNavigate>
+      </BrowserRouter>
     </ThemeProvider>
   );
 }

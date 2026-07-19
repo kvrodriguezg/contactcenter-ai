@@ -25,7 +25,7 @@ public class ListDocumentsQueryHandler : IRequestHandler<ListDocumentsQuery, IRe
 
         if (_currentUserService.Role == Role.SuperAdmin)
         {
-            // Sin filtro adicional.
+            // SuperAdmin: sin restricción por empresa.
         }
         else if (_currentUserService.CompanyId is not null)
         {

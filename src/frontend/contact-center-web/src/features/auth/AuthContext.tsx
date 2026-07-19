@@ -12,7 +12,13 @@ import { getCurrentUser, login as loginRequest } from '../../shared/api/authApi'
 import { setOnUnauthorized } from '../../shared/api/client';
 import type { CurrentUser } from '../../shared/types/auth';
 import { LoadingScreen } from '../../shared/components/LoadingScreen';
-import { AUTH_PROVIDER, auth0Config, isAuth0Configured, isAuth0Mode } from './authConfig';
+import {
+  AUTH_PROVIDER,
+  auth0Config,
+  formatAuth0Error,
+  isAuth0Configured,
+  isAuth0Mode,
+} from './authConfig';
 import {
   Auth0TokenProvider,
   LocalTokenProvider,
@@ -39,10 +45,40 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   if (isAuth0Mode) {
+    if (!isAuth0Configured()) {
+      return <Auth0MisconfiguredProvider>{children}</Auth0MisconfiguredProvider>;
+    }
+
     return <Auth0AuthProvider>{children}</Auth0AuthProvider>;
   }
 
   return <LocalAuthProvider>{children}</LocalAuthProvider>;
+}
+
+function Auth0MisconfiguredProvider({ children }: AuthProviderProps) {
+  const value = useMemo(
+    () => ({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      authProvider: AUTH_PROVIDER,
+      authError:
+        'Auth0 no está configurado. Defina VITE_AUTH0_DOMAIN y VITE_AUTH0_CLIENT_ID en el build.',
+      login: async () => {
+        throw new Error('Auth0 no está configurado.');
+      },
+      loginWithAuth0: async () => {
+        throw new Error(
+          'Auth0 no está configurado. Defina VITE_AUTH0_DOMAIN y VITE_AUTH0_CLIENT_ID.',
+        );
+      },
+      logout: () => undefined,
+      clearAuthError: () => undefined,
+    }),
+    [],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 function LocalAuthProvider({ children }: AuthProviderProps) {
@@ -182,7 +218,7 @@ function Auth0AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     if (auth0Error) {
-      setAuthError('Auth0 no está disponible en este momento.');
+      setAuthError(formatAuth0Error(auth0Error));
     }
   }, [auth0Error]);
 
@@ -241,10 +277,23 @@ function Auth0AuthProvider({ children }: AuthProviderProps) {
       );
     }
 
+    if (typeof loginWithRedirect !== 'function') {
+      throw new Error('loginWithRedirect no está disponible. Auth0Provider no está montado.');
+    }
+
     setAuthError(null);
-    await loginWithRedirect({
-      appState: { returnTo: '/dashboard' },
-    });
+
+    try {
+      await loginWithRedirect({
+        appState: { returnTo: '/dashboard' },
+        authorizationParams: {
+          redirect_uri: auth0Config.redirectUri,
+          audience: auth0Config.audience,
+        },
+      });
+    } catch (error) {
+      throw new Error(formatAuth0Error(error));
+    }
   }, [loginWithRedirect]);
 
   const isLoading = isAuth0Loading || (isAuth0Authenticated && isProfileLoading);
