@@ -18,5 +18,8 @@ public class UserDto
 
     public string AuthenticationProvider { get; set; } = string.Empty;
 
+    /// <summary>Auth0 claim <c>sub</c> (or equivalent external identity subject).</summary>
+    public string? ExternalSubject { get; set; }
+
     public DateTime CreatedAt { get; set; }
 }

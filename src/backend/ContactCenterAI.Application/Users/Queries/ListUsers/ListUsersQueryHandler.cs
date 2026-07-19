@@ -49,6 +49,7 @@ public class ListUsersQueryHandler : IRequestHandler<ListUsersQuery, IReadOnlyLi
                 CompanyId = u.CompanyId,
                 CompanyName = u.Company != null ? u.Company.Name : null,
                 AuthenticationProvider = u.AuthenticationProvider.ToString(),
+                ExternalSubject = u.ExternalSubject,
                 CreatedAt = u.CreatedAt
             })
             .ToListAsync(cancellationToken);

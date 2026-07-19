@@ -32,6 +32,7 @@ import {
 } from '@mui/material';
 import { createUser, getCompanies, getUsers, updateUser } from '../../shared/api/authApi';
 import type { Company, UserListItem } from '../../shared/types/auth';
+import { isAuth0Mode } from '../auth/authConfig';
 import { useAuth } from '../auth/useAuth';
 
 type RoleValue = 'SuperAdmin' | 'CompanyAdmin' | 'Agent';
@@ -54,6 +55,7 @@ interface UserFormState {
   companyId: string;
   isActive: boolean;
   password: string;
+  externalSubject: string;
 }
 
 const emptyForm: UserFormState = {
@@ -63,6 +65,7 @@ const emptyForm: UserFormState = {
   companyId: '',
   isActive: true,
   password: '',
+  externalSubject: '',
 };
 
 export function UsersPage() {
@@ -131,6 +134,7 @@ export function UsersPage() {
       companyId: target.companyId ?? '',
       isActive: target.isActive,
       password: '',
+      externalSubject: target.externalSubject ?? '',
     });
     setFormError('');
     setDialogOpen(true);
@@ -156,6 +160,12 @@ export function UsersPage() {
       return;
     }
 
+    const auth0Id = form.externalSubject.trim();
+    if (isAuth0Mode && !auth0Id) {
+      setFormError('El ID de Auth0 es obligatorio (claim sub completo, p. ej. auth0|...).');
+      return;
+    }
+
     setIsSaving(true);
     try {
       if (editingUser) {
@@ -164,6 +174,7 @@ export function UsersPage() {
           isActive: form.isActive,
           companyId: form.role === 'SuperAdmin' ? null : form.companyId || null,
           name: form.name.trim() === '' ? null : form.name.trim(),
+          externalSubject: auth0Id,
         });
         setSuccessMessage(`Usuario "${updated.email}" actualizado correctamente.`);
       } else {
@@ -173,6 +184,7 @@ export function UsersPage() {
           role: form.role,
           companyId: form.role === 'SuperAdmin' ? null : form.companyId || null,
           password: form.password.trim() === '' ? null : form.password.trim(),
+          externalSubject: auth0Id === '' ? null : auth0Id,
         });
         setSuccessMessage(`Usuario "${created.email}" creado correctamente.`);
       }
@@ -338,6 +350,21 @@ export function UsersPage() {
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               fullWidth
+            />
+
+            <TextField
+              label="ID de Auth0"
+              value={form.externalSubject}
+              onChange={(e) => setForm((prev) => ({ ...prev, externalSubject: e.target.value }))}
+              fullWidth
+              required={isAuth0Mode}
+              placeholder="auth0|687d1234567890abcdef"
+              helperText={
+                isAuth0Mode
+                  ? 'Obligatorio. Pegue el claim sub completo del usuario en Auth0.'
+                  : 'Opcional. Claim sub completo si el usuario iniciará sesión con Auth0.'
+              }
+              inputProps={{ autoComplete: 'off', spellCheck: false }}
             />
 
             <FormControl fullWidth>

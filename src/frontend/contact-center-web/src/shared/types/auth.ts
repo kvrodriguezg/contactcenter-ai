@@ -35,6 +35,8 @@ export interface UserListItem {
   companyId?: string | null;
   companyName?: string | null;
   authenticationProvider: string;
+  /** Auth0 claim `sub` (p. ej. auth0|...). */
+  externalSubject?: string | null;
   createdAt: string;
 }
 
@@ -53,6 +55,7 @@ export interface CreateUserPayload {
   role: string;
   companyId?: string | null;
   password?: string | null;
+  externalSubject?: string | null;
 }
 
 export interface UpdateUserPayload {
@@ -60,4 +63,6 @@ export interface UpdateUserPayload {
   isActive: boolean;
   companyId?: string | null;
   name?: string | null;
+  /** Omitir para no modificar el ID Auth0 (p. ej. al cambiar solo el estado). */
+  externalSubject?: string | null;
 }

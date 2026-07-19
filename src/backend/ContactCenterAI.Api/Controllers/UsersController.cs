@@ -44,7 +44,8 @@ public class UsersController : ControllerBase
             request.Role,
             request.CompanyId,
             request.Password,
-            request.Name);
+            request.Name,
+            request.ExternalSubject);
 
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
@@ -61,7 +62,8 @@ public class UsersController : ControllerBase
             request.Role,
             request.IsActive,
             request.CompanyId,
-            request.Name);
+            request.Name,
+            request.ExternalSubject);
 
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
@@ -79,6 +81,9 @@ public class CreateUserRequest
     public Guid? CompanyId { get; set; }
 
     public string? Password { get; set; }
+
+    /// <summary>Valor completo del claim Auth0 <c>sub</c> (p. ej. auth0|...).</summary>
+    public string? ExternalSubject { get; set; }
 }
 
 public class UpdateUserRequest
@@ -90,4 +95,10 @@ public class UpdateUserRequest
     public Guid? CompanyId { get; set; }
 
     public string? Name { get; set; }
+
+    /// <summary>
+    /// Valor completo del claim Auth0 <c>sub</c>. Omitir (<c>null</c>) para no modificarlo
+    /// (p. ej. al cambiar solo el estado activo).
+    /// </summary>
+    public string? ExternalSubject { get; set; }
 }

@@ -265,6 +265,25 @@ public class LocalUserResolverTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Auth0_resolves_authenticated_user_by_sub_claim()
+    {
+        var user = await SeedUserAsync(
+            email: "prelinked@test.com",
+            isActive: true,
+            externalSubject: "auth0|687d1234567890abcdef");
+
+        var resolver = CreateResolver(AuthenticationProviders.Auth0);
+        // Different email in the token must not matter when ExternalSubject matches `sub`.
+        var principal = CreatePrincipal("auth0|687d1234567890abcdef", "other-email@test.com");
+
+        var result = await resolver.ResolveAsync(principal);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(user.Id, result.UserId);
+        Assert.Equal(user.Email, result.Email);
+    }
+
+    [Fact]
     public async Task Auth0_fallback_by_email_links_external_subject()
     {
         var user = await SeedUserAsync(email: "fallback@test.com", isActive: true);

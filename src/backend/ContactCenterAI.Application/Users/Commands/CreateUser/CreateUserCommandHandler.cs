@@ -1,4 +1,5 @@
 using ContactCenterAI.Application.Common.Interfaces;
+using ContactCenterAI.Application.Users.Common;
 using ContactCenterAI.Application.Users.DTOs;
 using ContactCenterAI.Domain.Identity;
 using ContactCenterAI.Domain.Tenancy;
@@ -14,15 +15,18 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, UserD
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IAuthProviderMode _authProviderMode;
 
     public CreateUserCommandHandler(
         IApplicationDbContext context,
         ICurrentUserService currentUserService,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        IAuthProviderMode authProviderMode)
     {
         _context = context;
         _currentUserService = currentUserService;
         _passwordHasher = passwordHasher;
+        _authProviderMode = authProviderMode;
     }
 
     public async Task<UserDto> Handle(CreateUserCommand request, CancellationToken cancellationToken)
@@ -85,6 +89,19 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, UserD
             ]);
         }
 
+        var externalSubject = ExternalSubjectRules.Normalize(request.ExternalSubject);
+        ExternalSubjectRules.EnsureValidForCreate(
+            _authProviderMode,
+            externalSubject,
+            nameof(CreateUserCommand.ExternalSubject));
+
+        await ExternalSubjectRules.EnsureUniqueAsync(
+            _context,
+            externalSubject,
+            excludeUserId: null,
+            nameof(CreateUserCommand.ExternalSubject),
+            cancellationToken);
+
         Company? company = null;
         if (companyId is not null)
         {
@@ -119,9 +136,10 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, UserD
             Role = role,
             CompanyId = companyId,
             IsActive = true,
-            AuthenticationProvider = AuthenticationProvider.Local,
             CreatedAt = DateTime.UtcNow
         };
+
+        ExternalSubjectRules.ApplyToUser(user, externalSubject);
 
         user.PasswordHash = string.IsNullOrEmpty(request.Password)
             ? string.Empty
@@ -130,17 +148,20 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, UserD
         _context.Users.Add(user);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new UserDto
-        {
-            Id = user.Id,
-            Email = user.Email,
-            Name = user.Name,
-            Role = user.Role.ToString(),
-            IsActive = user.IsActive,
-            CompanyId = user.CompanyId,
-            CompanyName = company?.Name,
-            AuthenticationProvider = user.AuthenticationProvider.ToString(),
-            CreatedAt = user.CreatedAt
-        };
+        return ToDto(user, company?.Name);
     }
+
+    private static UserDto ToDto(User user, string? companyName) => new()
+    {
+        Id = user.Id,
+        Email = user.Email,
+        Name = user.Name,
+        Role = user.Role.ToString(),
+        IsActive = user.IsActive,
+        CompanyId = user.CompanyId,
+        CompanyName = companyName,
+        AuthenticationProvider = user.AuthenticationProvider.ToString(),
+        ExternalSubject = user.ExternalSubject,
+        CreatedAt = user.CreatedAt
+    };
 }

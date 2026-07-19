@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddSingleton(auth0Settings);
         services.AddSingleton(Options.Create(authenticationSettings));
         services.AddSingleton(Options.Create(auth0Settings));
+        services.AddSingleton<IAuthProviderMode, AuthProviderMode>();
 
         var chatServiceSettings = ChatServiceConfiguration.Resolve(configuration);
         services.AddSingleton(chatServiceSettings);

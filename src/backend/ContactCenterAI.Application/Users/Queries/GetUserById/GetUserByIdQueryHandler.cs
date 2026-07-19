@@ -44,6 +44,7 @@ public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, UserDto
             CompanyId = user.CompanyId,
             CompanyName = user.Company?.Name,
             AuthenticationProvider = user.AuthenticationProvider.ToString(),
+            ExternalSubject = user.ExternalSubject,
             CreatedAt = user.CreatedAt
         };
     }

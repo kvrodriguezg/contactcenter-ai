@@ -54,16 +54,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   if (!response.ok) {
-    let message = `Error ${response.status}`;
-    try {
-      const data = (await response.json()) as { message?: string };
-      if (data.message) {
-        message = data.message;
-      }
-    } catch {
-      // Sin cuerpo JSON.
-    }
-    throw new Error(message);
+    throw new Error(await parseErrorMessage(response));
   }
 
   if (response.status === 204) {

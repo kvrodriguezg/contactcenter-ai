@@ -1,4 +1,5 @@
 using ContactCenterAI.Application.Common.Interfaces;
+using ContactCenterAI.Application.Users.Common;
 using ContactCenterAI.Application.Users.DTOs;
 using ContactCenterAI.Domain.Identity;
 using ContactCenterAI.Domain.Tenancy;
@@ -13,13 +14,16 @@ public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, UserD
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IAuthProviderMode _authProviderMode;
 
     public UpdateUserCommandHandler(
         IApplicationDbContext context,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        IAuthProviderMode authProviderMode)
     {
         _context = context;
         _currentUserService = currentUserService;
+        _authProviderMode = authProviderMode;
     }
 
     public async Task<UserDto> Handle(UpdateUserCommand request, CancellationToken cancellationToken)
@@ -107,9 +111,27 @@ public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, UserD
         {
             user.Name = request.Name.Trim().Length == 0 ? null : request.Name.Trim();
         }
+
+        if (request.ExternalSubject is not null)
+        {
+            var externalSubject = ExternalSubjectRules.Normalize(request.ExternalSubject);
+            ExternalSubjectRules.EnsureValidForUpdate(
+                _authProviderMode,
+                request.ExternalSubject,
+                externalSubject,
+                nameof(UpdateUserCommand.ExternalSubject));
+
+            await ExternalSubjectRules.EnsureUniqueAsync(
+                _context,
+                externalSubject,
+                excludeUserId: user.Id,
+                nameof(UpdateUserCommand.ExternalSubject),
+                cancellationToken);
+
+            ExternalSubjectRules.ApplyToUser(user, externalSubject);
+        }
+
         user.UpdatedAt = DateTime.UtcNow;
-        // ExternalSubject / AuthenticationProvider are intentionally left untouched
-        // to preserve compatibility with Auth0-linked users.
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -123,6 +145,7 @@ public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, UserD
             CompanyId = user.CompanyId,
             CompanyName = company?.Name,
             AuthenticationProvider = user.AuthenticationProvider.ToString(),
+            ExternalSubject = user.ExternalSubject,
             CreatedAt = user.CreatedAt
         };
     }

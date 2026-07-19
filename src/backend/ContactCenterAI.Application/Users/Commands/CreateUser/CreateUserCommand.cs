@@ -8,4 +8,5 @@ public record CreateUserCommand(
     string Role,
     Guid? CompanyId,
     string? Password,
-    string? Name = null) : IRequest<UserDto>;
+    string? Name = null,
+    string? ExternalSubject = null) : IRequest<UserDto>;
