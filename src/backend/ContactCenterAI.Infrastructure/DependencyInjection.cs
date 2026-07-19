@@ -6,6 +6,7 @@ using ContactCenterAI.Infrastructure.Storage;
 using ContactCenterAI.Infrastructure.Documents;
 using ContactCenterAI.Infrastructure.Ai;
 using ContactCenterAI.Infrastructure.Chat;
+using ContactCenterAI.Infrastructure.Tickets;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -78,6 +79,7 @@ public static class DependencyInjection
         services.AddScoped<IPdfTextExtractor, PdfTextExtractor>();
         services.AddScoped<IDocumentChunkingService, DocumentChunkingService>();
         services.AddScoped<IDocumentProcessingService, DocumentProcessingService>();
+        services.AddScoped<ITicketEventPublisher, NoOpTicketEventPublisher>();
         services.AddScoped<ISemanticSearchService, SemanticSearchService>();
 
         return services;

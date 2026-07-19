@@ -1,6 +1,7 @@
 using ContactCenterAI.Domain.Common;
 using ContactCenterAI.Domain.Documents;
 using ContactCenterAI.Domain.Identity;
+using ContactCenterAI.Domain.Tickets;
 
 namespace ContactCenterAI.Domain.Tenancy;
 
@@ -15,4 +16,6 @@ public class Company : AuditableEntity
     public ICollection<Document> Documents { get; set; } = [];
 
     public ICollection<Chat.Conversation> Conversations { get; set; } = [];
+
+    public ICollection<Ticket> Tickets { get; set; } = [];
 }

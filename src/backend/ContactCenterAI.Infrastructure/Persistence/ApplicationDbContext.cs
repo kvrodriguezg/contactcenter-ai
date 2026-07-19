@@ -3,6 +3,7 @@ using ContactCenterAI.Domain.Chat;
 using ContactCenterAI.Domain.Documents;
 using ContactCenterAI.Domain.Identity;
 using ContactCenterAI.Domain.Tenancy;
+using ContactCenterAI.Domain.Tickets;
 using Microsoft.EntityFrameworkCore;
 
 namespace ContactCenterAI.Infrastructure.Persistence;
@@ -27,6 +28,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Conversation> Conversations => Set<Conversation>();
 
     public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
+
+    public DbSet<Ticket> Tickets => Set<Ticket>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
