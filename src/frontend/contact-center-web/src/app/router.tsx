@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { AdminRoute } from '../features/auth/AdminRoute';
 import { AuthProvider } from '../features/auth/AuthContext';
 import { GuestRoute } from '../features/auth/GuestRoute';
 import { LoginPage } from '../features/auth/LoginPage';
@@ -26,8 +27,10 @@ export function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route element={<PrivateLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/companies" element={<CompaniesPage />} />
-            <Route path="/users" element={<UsersPage />} />
+            <Route element={<AdminRoute />}>
+              <Route path="/companies" element={<CompaniesPage />} />
+              <Route path="/users" element={<UsersPage />} />
+            </Route>
             <Route path="/documents" element={<DocumentsPage />} />
             <Route path="/chat" element={<ChatPage />} />
           </Route>

@@ -85,6 +85,10 @@ export function apiPost<T>(
   return request<T>(path, { body, skipAuth: options?.skipAuth });
 }
 
+export function apiPut<T>(path: string, body: unknown): Promise<T> {
+  return request<T>(path, { body, method: 'PUT' });
+}
+
 async function parseErrorMessage(response: Response): Promise<string> {
   try {
     const data = (await response.json()) as {

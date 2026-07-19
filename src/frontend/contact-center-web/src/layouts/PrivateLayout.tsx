@@ -22,16 +22,20 @@ import { useAuth } from '../features/auth/useAuth';
 
 const drawerWidth = 240;
 
+const ADMIN_ROLES = ['SuperAdmin', 'CompanyAdmin'];
+
 const navItems = [
-  { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
-  { label: 'Empresas', path: '/companies', icon: <BusinessIcon /> },
-  { label: 'Usuarios', path: '/users', icon: <GroupIcon /> },
-  { label: 'Documentos', path: '/documents', icon: <DescriptionIcon /> },
-  { label: 'Chat IA', path: '/chat', icon: <ChatIcon /> },
+  { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon />, adminOnly: false },
+  { label: 'Empresas', path: '/companies', icon: <BusinessIcon />, adminOnly: true },
+  { label: 'Usuarios', path: '/users', icon: <GroupIcon />, adminOnly: true },
+  { label: 'Documentos', path: '/documents', icon: <DescriptionIcon />, adminOnly: false },
+  { label: 'Chat IA', path: '/chat', icon: <ChatIcon />, adminOnly: false },
 ];
 
 export function PrivateLayout() {
   const { user, logout } = useAuth();
+  const isAdmin = !!user && ADMIN_ROLES.includes(user.role);
+  const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -68,7 +72,7 @@ export function PrivateLayout() {
         <Toolbar />
         <Divider />
         <List>
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <ListItemButton
               key={item.path}
               component={NavLink}
