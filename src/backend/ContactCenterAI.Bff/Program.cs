@@ -73,8 +73,7 @@ try
     {
         options.AddPolicy("Frontend", policy =>
         {
-            var origins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>()
-                ?? ["http://localhost:5173"];
+            var origins = ResolveCorsOrigins(builder.Configuration);
 
             policy.WithOrigins(origins)
                 .AllowAnyHeader()
@@ -89,7 +88,6 @@ try
         options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
         {
             diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value ?? string.Empty);
-            // Never log Authorization header / tokens.
         };
     });
 
@@ -113,5 +111,45 @@ finally
 
 static string EnsureTrailingSlash(string url) =>
     url.EndsWith('/') ? url : url + "/";
+
+static string[] ResolveCorsOrigins(IConfiguration configuration)
+{
+    var origins = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+    void AddOrigin(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return;
+        }
+
+        foreach (var part in raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var origin = part.TrimEnd('/');
+            if (origin.Length > 0)
+            {
+                origins.Add(origin);
+            }
+        }
+    }
+
+    var fromSection = configuration.GetSection("Cors:Origins").Get<string[]>();
+    if (fromSection is not null)
+    {
+        foreach (var item in fromSection)
+        {
+            AddOrigin(item);
+        }
+    }
+
+    AddOrigin(configuration["WEB_ORIGIN"]);
+
+    if (origins.Count == 0)
+    {
+        origins.Add("http://localhost:5173");
+    }
+
+    return [.. origins];
+}
 
 public partial class Program;

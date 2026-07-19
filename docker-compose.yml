@@ -166,6 +166,7 @@ services:
       Jwt__Audience: ${JWT_AUDIENCE:-ContactCenterAI.Client}
       Jwt__SecretKey: ${JWT_SECRET_KEY:-DEV_ONLY_SECRET_KEY_CHANGE_IN_PRODUCTION_123456}
       Cors__Origins__0: ${WEB_ORIGIN:-http://localhost:5173}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
     ports:
       - "${BFF_PORT:-8082}:8080"
     volumes:
@@ -195,7 +196,8 @@ services:
         VITE_AUTH0_REDIRECT_URI: ${VITE_AUTH0_REDIRECT_URI}
         VITE_CHAT_SERVICE_MODE: ${VITE_CHAT_SERVICE_MODE}
         VITE_CHAT_API_BASE_URL: ${VITE_CHAT_API_BASE_URL}
-        VITE_BFF_GRAPHQL_URL: ${VITE_BFF_GRAPHQL_URL:-http://localhost:8082/graphql}
+        VITE_GRAPHQL_URL: ${VITE_GRAPHQL_URL:-/graphql}
+        VITE_BFF_GRAPHQL_URL: ${VITE_BFF_GRAPHQL_URL:-}
     container_name: contactcenterai-web
     ports:
       - "${WEB_PORT:-5173}:80"

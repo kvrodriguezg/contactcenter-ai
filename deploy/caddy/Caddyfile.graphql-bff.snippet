@@ -1,17 +1,14 @@
 # Caddy reverse-proxy snippet for ContactCenterAI GraphQL BFF
 #
-# The production Caddyfile lives on the EC2 host (not version-controlled here).
-# Add a route that forwards GraphQL to the BFF container without replacing REST.
-#
 # Suggested host ports (docker-compose):
 #   api      -> ${API_PORT:-8080}
 #   chat-api -> ${CHAT_API_PORT:-8081}
 #   bff      -> ${BFF_PORT:-8082}
+#   web      -> ${WEB_PORT:-5173}
 #
-# Example site block (TLS termination on Caddy):
-
+# Example:
+#
 # contactcenter.example.com {
-#     # Existing REST / SPA routes stay as they are…
 #     handle /api/* {
 #         reverse_proxy localhost:8080
 #     }
@@ -21,7 +18,6 @@
 #         reverse_proxy localhost:8081
 #     }
 #
-#     # GraphQL BFF — read aggregation only
 #     handle /graphql* {
 #         reverse_proxy localhost:8082
 #     }
@@ -30,14 +26,6 @@
 #         reverse_proxy localhost:5173
 #     }
 # }
-#
-# Notes:
-# - Preserve the Authorization header (Caddy does by default).
-# - Do not log Authorization / Bearer tokens in access logs.
-# - /health on the BFF remains internal (compose healthcheck); optional:
-#     handle /bff/health {
-#         reverse_proxy localhost:8082
-#     }
 
 handle /graphql* {
 	reverse_proxy bff:8080

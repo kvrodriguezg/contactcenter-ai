@@ -1,7 +1,19 @@
 import { getTokenProvider } from '../../features/auth/tokenProvider';
 
-const BFF_GRAPHQL_URL =
-  import.meta.env.VITE_BFF_GRAPHQL_URL ?? 'http://localhost:8082/graphql';
+function resolveGraphQlUrl(): string {
+  const configured =
+    (import.meta.env.VITE_GRAPHQL_URL as string | undefined)?.trim() ||
+    (import.meta.env.VITE_BFF_GRAPHQL_URL as string | undefined)?.trim() ||
+    '';
+
+  if (configured) {
+    return configured.replace(/\/+$/, '') || '/graphql';
+  }
+
+  return '/graphql';
+}
+
+const GRAPHQL_URL = resolveGraphQlUrl();
 
 export type GraphQlResponse<T> = {
   data?: T;
@@ -22,7 +34,7 @@ export async function graphqlRequest<T>(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(BFF_GRAPHQL_URL, {
+  const response = await fetch(GRAPHQL_URL, {
     method: 'POST',
     headers,
     body: JSON.stringify({ query, variables }),
@@ -45,4 +57,5 @@ export async function graphqlRequest<T>(
   return payload.data;
 }
 
-export { BFF_GRAPHQL_URL };
+export const BFF_GRAPHQL_URL = GRAPHQL_URL;
+export { GRAPHQL_URL };
