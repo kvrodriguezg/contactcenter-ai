@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "ContactCenterAI.Bff": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:8082",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "CoreApi__BaseUrl": "http://localhost:8080",
+        "ChatApi__BaseUrl": "http://localhost:8081"
+      }
+    }
+  }
+}

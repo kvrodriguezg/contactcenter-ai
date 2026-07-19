@@ -1,4 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
+import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import SendIcon from '@mui/icons-material/Send';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import PersonIcon from '@mui/icons-material/Person';
@@ -11,12 +12,20 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
+  FormControl,
   IconButton,
+  InputLabel,
   List,
   ListItemButton,
   ListItemText,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   TextField,
   Typography,
@@ -24,7 +33,9 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { askQuestion, getConversationById, getConversations } from '../../shared/api/chatApi';
+import { createTicket } from '../../shared/api/ticketsApi';
 import type { ChatSourceDto, ConversationDto, ConversationMessageDto } from '../../shared/types/chat';
+import type { TicketPriority } from '../../shared/types/tickets';
 
 type DisplayMessage = {
   id: string;
@@ -32,6 +43,15 @@ type DisplayMessage = {
   content: string;
   sources: ChatSourceDto[];
   createdAt: string;
+};
+
+const PRIORITIES: TicketPriority[] = ['Low', 'Medium', 'High', 'Critical'];
+
+const priorityLabels: Record<TicketPriority, string> = {
+  Low: 'Baja',
+  Medium: 'Media',
+  High: 'Alta',
+  Critical: 'Crítica',
 };
 
 function mapMessage(message: ConversationMessageDto): DisplayMessage {
@@ -99,7 +119,15 @@ function SourcesPanel({ sources }: { sources: ChatSourceDto[] }) {
   );
 }
 
-function MessageBubble({ message }: { message: DisplayMessage }) {
+function MessageBubble({
+  message,
+  onEscalate,
+  canEscalate,
+}: {
+  message: DisplayMessage;
+  onEscalate?: () => void;
+  canEscalate?: boolean;
+}) {
   const isUser = message.role === 'User';
 
   return (
@@ -129,6 +157,18 @@ function MessageBubble({ message }: { message: DisplayMessage }) {
           {message.content}
         </Typography>
         {!isUser && <SourcesPanel sources={message.sources} />}
+        {!isUser && canEscalate && onEscalate && (
+          <Box sx={{ mt: 1.5 }}>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<ConfirmationNumberIcon />}
+              onClick={onEscalate}
+            >
+              Escalar a ticket
+            </Button>
+          </Box>
+        )}
       </Paper>
     </Box>
   );
@@ -143,7 +183,15 @@ export function ChatPage() {
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const [escalateOpen, setEscalateOpen] = useState(false);
+  const [escalateSubject, setEscalateSubject] = useState('');
+  const [escalateDescription, setEscalateDescription] = useState('');
+  const [escalatePriority, setEscalatePriority] = useState<TicketPriority>('Medium');
+  const [escalateError, setEscalateError] = useState('');
+  const [isEscalating, setIsEscalating] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -196,6 +244,53 @@ export function ChatPage() {
     setMessages([]);
     setQuestion('');
     setError('');
+  };
+
+  const openEscalateDialog = (assistantMessage: DisplayMessage) => {
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === 'User');
+    const subjectBase = lastUserMessage?.content?.trim() || assistantMessage.content.trim();
+    setEscalateSubject(
+      subjectBase.length > 80 ? `${subjectBase.slice(0, 77)}...` : subjectBase || 'Consulta no resuelta',
+    );
+    setEscalateDescription(
+      [
+        lastUserMessage ? `Pregunta: ${lastUserMessage.content}` : null,
+        `Respuesta del asistente: ${assistantMessage.content}`,
+      ]
+        .filter(Boolean)
+        .join('\n\n'),
+    );
+    setEscalatePriority('Medium');
+    setEscalateError('');
+    setEscalateOpen(true);
+  };
+
+  const handleEscalate = async () => {
+    setEscalateError('');
+    if (!escalateSubject.trim()) {
+      setEscalateError('El asunto es obligatorio.');
+      return;
+    }
+    if (!escalateDescription.trim()) {
+      setEscalateError('La descripción es obligatoria.');
+      return;
+    }
+
+    setIsEscalating(true);
+    try {
+      await createTicket({
+        subject: escalateSubject.trim(),
+        description: escalateDescription.trim(),
+        priority: escalatePriority,
+        conversationId: selectedConversationId,
+      });
+      setSuccessMessage('Ticket creado correctamente desde el chat.');
+      setEscalateOpen(false);
+    } catch (err) {
+      setEscalateError(err instanceof Error ? err.message : 'No fue posible crear el ticket.');
+    } finally {
+      setIsEscalating(false);
+    }
   };
 
   const handleSend = async () => {
@@ -262,6 +357,12 @@ export function ChatPage() {
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
         Consulta los documentos procesados mediante IA.
       </Typography>
+
+      {successMessage && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMessage('')}>
+          {successMessage}
+        </Alert>
+      )}
 
       <Box
         sx={{
@@ -367,7 +468,12 @@ export function ChatPage() {
             ) : (
               <>
                 {messages.map((message) => (
-                  <MessageBubble key={message.id} message={message} />
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                    canEscalate={!!selectedConversationId}
+                    onEscalate={() => openEscalateDialog(message)}
+                  />
                 ))}
                 {isSending && (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -406,6 +512,65 @@ export function ChatPage() {
           </Box>
         </Paper>
       </Box>
+
+      <Dialog open={escalateOpen} onClose={() => !isEscalating && setEscalateOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Escalar a ticket</DialogTitle>
+        <DialogContent>
+          {escalateError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {escalateError}
+            </Alert>
+          )}
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Asunto"
+              value={escalateSubject}
+              onChange={(e) => setEscalateSubject(e.target.value)}
+              fullWidth
+              required
+            />
+            <TextField
+              label="Descripción"
+              value={escalateDescription}
+              onChange={(e) => setEscalateDescription(e.target.value)}
+              fullWidth
+              required
+              multiline
+              minRows={4}
+            />
+            <FormControl fullWidth>
+              <InputLabel id="escalate-priority-label">Prioridad</InputLabel>
+              <Select
+                labelId="escalate-priority-label"
+                label="Prioridad"
+                value={escalatePriority}
+                onChange={(e) => setEscalatePriority(e.target.value as TicketPriority)}
+              >
+                {PRIORITIES.map((priority) => (
+                  <MenuItem key={priority} value={priority}>
+                    {priorityLabels[priority]}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              label="Conversation ID"
+              value={selectedConversationId ?? ''}
+              fullWidth
+              disabled
+              helperText="Se asocia automáticamente a la conversación actual."
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEscalateOpen(false)} disabled={isEscalating}>
+            Cancelar
+          </Button>
+          <Button variant="contained" onClick={() => void handleEscalate()} disabled={isEscalating}>
+            {isEscalating ? <CircularProgress size={22} /> : 'Crear ticket'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

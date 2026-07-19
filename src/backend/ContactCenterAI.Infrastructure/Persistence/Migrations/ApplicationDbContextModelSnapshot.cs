@@ -258,6 +258,10 @@ namespace ContactCenterAI.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Name")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -312,6 +316,83 @@ namespace ContactCenterAI.Infrastructure.Persistence.Migrations
                     b.HasIndex("Name");
 
                     b.ToTable("companies", (string)null);
+                });
+
+            modelBuilder.Entity("ContactCenterAI.Domain.Tickets.Ticket", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AssignedToUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ConversationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Resolution")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("EscalationProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EscalationStatus")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedToUserId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("ConversationId");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("Priority");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("tickets", (string)null);
                 });
 
             modelBuilder.Entity("ContactCenterAI.Domain.Chat.Conversation", b =>
@@ -395,6 +476,39 @@ namespace ContactCenterAI.Infrastructure.Persistence.Migrations
                     b.Navigation("Company");
                 });
 
+            modelBuilder.Entity("ContactCenterAI.Domain.Tickets.Ticket", b =>
+                {
+                    b.HasOne("ContactCenterAI.Domain.Identity.User", "AssignedToUser")
+                        .WithMany("AssignedTickets")
+                        .HasForeignKey("AssignedToUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ContactCenterAI.Domain.Tenancy.Company", "Company")
+                        .WithMany("Tickets")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ContactCenterAI.Domain.Chat.Conversation", "Conversation")
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ContactCenterAI.Domain.Identity.User", "CreatedByUser")
+                        .WithMany("CreatedTickets")
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AssignedToUser");
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Conversation");
+
+                    b.Navigation("CreatedByUser");
+                });
+
             modelBuilder.Entity("ContactCenterAI.Domain.Chat.Conversation", b =>
                 {
                     b.Navigation("Messages");
@@ -407,7 +521,11 @@ namespace ContactCenterAI.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("ContactCenterAI.Domain.Identity.User", b =>
                 {
+                    b.Navigation("AssignedTickets");
+
                     b.Navigation("Conversations");
+
+                    b.Navigation("CreatedTickets");
 
                     b.Navigation("RefreshTokens");
 
@@ -419,6 +537,8 @@ namespace ContactCenterAI.Infrastructure.Persistence.Migrations
                     b.Navigation("Conversations");
 
                     b.Navigation("Documents");
+
+                    b.Navigation("Tickets");
 
                     b.Navigation("Users");
                 });

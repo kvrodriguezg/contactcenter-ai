@@ -12,7 +12,7 @@ public class DocumentProcessingService : IDocumentProcessingService
 {
     private const int MaxErrorMessageLength = 2000;
 
-    private readonly ApplicationDbContext _context;
+    private readonly IApplicationDbContext _context;
     private readonly IDocumentStorageService _documentStorageService;
     private readonly IPdfTextExtractor _pdfTextExtractor;
     private readonly IDocumentChunkingService _documentChunkingService;
@@ -22,7 +22,7 @@ public class DocumentProcessingService : IDocumentProcessingService
     private readonly ILogger<DocumentProcessingService> _logger;
 
     public DocumentProcessingService(
-        ApplicationDbContext context,
+        IApplicationDbContext context,
         IDocumentStorageService documentStorageService,
         IPdfTextExtractor pdfTextExtractor,
         IDocumentChunkingService documentChunkingService,
@@ -60,8 +60,11 @@ public class DocumentProcessingService : IDocumentProcessingService
         {
             try
             {
-                await ProcessDocumentAsync(document, cancellationToken);
-                processedCount++;
+                var outcome = await ProcessDocumentAsync(document, cancellationToken);
+                if (outcome == DocumentProcessingOutcome.Processed)
+                {
+                    processedCount++;
+                }
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
@@ -75,7 +78,35 @@ public class DocumentProcessingService : IDocumentProcessingService
         return processedCount;
     }
 
-    private async Task ProcessDocumentAsync(Document document, CancellationToken cancellationToken)
+    public async Task<DocumentProcessingOutcome> ProcessDocumentAsync(
+        Guid documentId,
+        CancellationToken cancellationToken = default)
+    {
+        var document = await _context.Documents
+            .FirstOrDefaultAsync(d => d.Id == documentId, cancellationToken);
+
+        if (document is null)
+        {
+            _logger.LogWarning(
+                "Documento {DocumentId} no encontrado; se omite el procesamiento por evento",
+                documentId);
+            return DocumentProcessingOutcome.NotFound;
+        }
+
+        // Idempotencia: no reprocesar documentos ya finalizados ni en curso.
+        if (!DocumentProcessingRules.ShouldProcess(document.Status))
+        {
+            _logger.LogInformation(
+                "Documento {DocumentId} en estado {Status}; se omite (idempotencia)",
+                document.Id,
+                document.Status);
+            return DocumentProcessingRules.SkipOutcomeFor(document.Status);
+        }
+
+        return await ProcessDocumentAsync(document, cancellationToken);
+    }
+
+    private async Task<DocumentProcessingOutcome> ProcessDocumentAsync(Document document, CancellationToken cancellationToken)
     {
         _logger.LogInformation(
             "Procesando documento {DocumentId} ({FileName})",
@@ -160,10 +191,13 @@ public class DocumentProcessingService : IDocumentProcessingService
                 "Documento {DocumentId} procesado correctamente con {ChunkCount} fragmentos y embeddings",
                 document.Id,
                 chunkTexts.Count);
+
+            return DocumentProcessingOutcome.Processed;
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             await MarkAsFailedAsync(document, exception, cancellationToken);
+            return DocumentProcessingOutcome.Failed;
         }
     }
 
