@@ -1,10 +1,13 @@
 using ContactCenterAI.Application.Common.Interfaces;
+using ContactCenterAI.Application.Common.Messaging;
 using ContactCenterAI.Application.Documents.DTOs;
 using ContactCenterAI.Domain.Documents;
 using ContactCenterAI.Domain.Identity;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ContactCenterAI.Application.Documents.Commands.UploadDocument;
 
@@ -13,15 +16,24 @@ public class UploadDocumentCommandHandler : IRequestHandler<UploadDocumentComman
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly IDocumentStorageService _documentStorageService;
+    private readonly IEventPublisher _eventPublisher;
+    private readonly MessagingSettings _messagingSettings;
+    private readonly ILogger<UploadDocumentCommandHandler> _logger;
 
     public UploadDocumentCommandHandler(
         IApplicationDbContext context,
         ICurrentUserService currentUserService,
-        IDocumentStorageService documentStorageService)
+        IDocumentStorageService documentStorageService,
+        IEventPublisher eventPublisher,
+        IOptions<MessagingSettings> messagingSettings,
+        ILogger<UploadDocumentCommandHandler> logger)
     {
         _context = context;
         _currentUserService = currentUserService;
         _documentStorageService = documentStorageService;
+        _eventPublisher = eventPublisher;
+        _messagingSettings = messagingSettings.Value;
+        _logger = logger;
     }
 
     public async Task<DocumentDto> Handle(UploadDocumentCommand request, CancellationToken cancellationToken)
@@ -48,6 +60,13 @@ public class UploadDocumentCommandHandler : IRequestHandler<UploadDocumentComman
             request.FileStream,
             cancellationToken);
 
+        // When messaging is enabled the document is "enqueued" for event-driven processing, so it
+        // starts in PendingProcessing. With messaging disabled it stays Uploaded (unchanged behavior).
+        // Either state is picked up by the polling reconciliation loop, so nothing is ever lost.
+        var initialStatus = _messagingSettings.Enabled
+            ? DocumentStatus.PendingProcessing
+            : DocumentStatus.Uploaded;
+
         var document = new Document
         {
             Id = documentId,
@@ -58,12 +77,14 @@ public class UploadDocumentCommandHandler : IRequestHandler<UploadDocumentComman
             ContentType = request.ContentType,
             SizeBytes = request.SizeBytes,
             StoragePath = storagePath,
-            Status = DocumentStatus.Uploaded,
+            Status = initialStatus,
             CreatedAt = DateTime.UtcNow
         };
 
         _context.Documents.Add(document);
         await _context.SaveChangesAsync(cancellationToken);
+
+        await PublishDocumentUploadedAsync(document, cancellationToken);
 
         return new DocumentDto
         {
@@ -119,5 +140,28 @@ public class UploadDocumentCommandHandler : IRequestHandler<UploadDocumentComman
         }
 
         return _currentUserService.CompanyId.Value;
+    }
+
+    private async Task PublishDocumentUploadedAsync(Document document, CancellationToken cancellationToken)
+    {
+        // Publish AFTER a successful save. A broker outage must never fail the upload — the polling
+        // reconciliation loop will still pick the document up — so failures are logged, not thrown.
+        try
+        {
+            await _eventPublisher.PublishAsync(
+                new DocumentUploadedEvent(
+                    document.Id,
+                    document.CompanyId,
+                    document.UploadedByUserId,
+                    DateTime.UtcNow),
+                cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(
+                exception,
+                "No se pudo publicar DocumentUploadedEvent para {DocumentId}; el polling lo procesará",
+                document.Id);
+        }
     }
 }

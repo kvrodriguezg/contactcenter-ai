@@ -22,8 +22,16 @@ public class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (!_settings.Value.PollingEnabled)
+        {
+            _logger.LogInformation(
+                "Polling de documentos deshabilitado (DocumentProcessing:PollingEnabled=false). "
+                + "El Worker dependerá exclusivamente de los consumidores de mensajería.");
+            return;
+        }
+
         _logger.LogInformation(
-            "ContactCenterAI Worker iniciado. Intervalo de procesamiento: {IntervalSeconds}s",
+            "ContactCenterAI Worker iniciado. Polling de reconciliación cada {IntervalSeconds}s",
             _settings.Value.IntervalSeconds);
 
         while (!stoppingToken.IsCancellationRequested)

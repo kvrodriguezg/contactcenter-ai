@@ -7,6 +7,7 @@ using ContactCenterAI.Infrastructure.Documents;
 using ContactCenterAI.Infrastructure.Ai;
 using ContactCenterAI.Infrastructure.Chat;
 using ContactCenterAI.Infrastructure.Tickets;
+using ContactCenterAI.Infrastructure.Messaging;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -81,6 +82,8 @@ public static class DependencyInjection
         services.AddScoped<IDocumentProcessingService, DocumentProcessingService>();
         services.AddScoped<ITicketEventPublisher, NoOpTicketEventPublisher>();
         services.AddScoped<ISemanticSearchService, SemanticSearchService>();
+
+        services.AddMessaging(configuration);
 
         return services;
     }
