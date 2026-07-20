@@ -1,8 +1,9 @@
 -- =============================================================================
--- ContactCenterAI — seed de desarrollo
+-- ContactCenterAI — seed de desarrollo (SOLO DEMO LOCAL)
 -- =============================================================================
--- Equivalente lógico a ApplicationDbSeeder (solo Development en la app).
--- Credenciales locales (AUTH_PROVIDER=Local):
+-- Equivalente lógico a ApplicationDbSeeder (la app solo siembra en Development).
+-- NO ejecutar este script contra bases de producción.
+-- Credenciales demostrativas (AUTH_PROVIDER=Local, entorno local):
 --   admin@contactcenterai.cl  / Admin123*  → SuperAdmin
 --   agente@contactcenterai.cl / Agent123*  → Agent
 --

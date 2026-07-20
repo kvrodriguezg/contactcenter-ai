@@ -73,3 +73,6 @@ secrets.json
 
 # Local tooling
 .tools/
+
+# Paquete de entrega académica duplicado (no versionar desde la raíz operativa)
+/entrega-final/
