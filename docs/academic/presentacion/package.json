@@ -1,0 +1,15 @@
+{
+  "name": "presentacion",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "generate": "node generate-pptx.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "pptxgenjs": "^4.0.1"
+  }
+}
