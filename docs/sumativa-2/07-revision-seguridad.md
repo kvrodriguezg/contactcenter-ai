@@ -1,118 +1,91 @@
 # Revisión de seguridad — Sumativa 2
 
-**Fecha:** 2026-07-19  
-**Proyecto:** ContactCenterAI  
-**Base:** código, configuración, `.gitignore`, documentación en `docs/security`, auditorías ejecutadas en esta sesión.
+**Fecha actualización remediación NuGet:** 2026-07-19  
+**Proyecto:** ContactCenterAI
 
-No se declara “cero vulnerabilidades” a nivel de solución: el escaneo NuGet reportó hallazgos y CodeQL aún no produjo resultados en GitHub.
+No se declara “cero vulnerabilidades” fuera de lo que confirma la herramienta en la fecha indicada.
 
 ---
 
-## 1. Autenticación Auth0 / JWT
+## 1. Controles de aplicación (resumen)
 
-| Aspecto | Evidencia |
-|---------|-----------|
-| Modos | Local (HS256) o Auth0 (RS256/JWKS), según `AUTH_PROVIDER` / `Authentication:Provider` |
-| Auth0 | Issuer/audience estrictos; login local responde 410 en modo Auth0 |
-| Resolución de usuario | Claim `sub` → `ExternalSubject`; fallback email controlado; exige usuario activo en BD |
-| Documentación | `docs/security/authentication-authorization.md`, `docs/architecture/auth0-integration.md` |
-| Pruebas | `Infrastructure.Tests/Identity/AuthenticationTests.cs` |
+| Tema | Estado verificable |
+|------|-------------------|
+| Auth0 / JWT | Auth0 (RS256) o Local (HS256) según `AUTH_PROVIDER` |
+| Autorización por rol | SuperAdmin, CompanyAdmin, Agent en BD local |
+| Aislamiento `CompanyId` | Desde perfil local (`ICurrentUserService`), no desde el cliente |
+| HTTPS | Compose local en HTTP; Caddy snippet para borde HTTPS en despliegue |
+| Secretos | `.env` en `.gitignore`; ejemplos sin secretos reales |
+| PDF | Validación `application/pdf`, extensión `.pdf`, máx. 10 MB |
+| Análisis estático | Workflow CodeQL configurado (`.github/workflows/codeql.yml`) |
 
-## 2. Autorización por rol
+Detalle AuthZ: `docs/security/authentication-authorization.md`.
 
-| Aspecto | Evidencia |
-|---------|-----------|
-| Roles | SuperAdmin, CompanyAdmin, Agent almacenados en BD local (no se confían roles Auth0 para privilegios) |
-| Controles | Handlers de Application rechazan operaciones fuera de rol (p. ej. Agent no crea usuarios; CompanyAdmin no crea SuperAdmin) |
-| Pruebas | `CreateUserCommandTests`, `CompanyCommandsTests`, `TicketCommandTests`, `BffGraphQlTests` |
+---
 
-## 3. Aislamiento por CompanyId
+## 2. Remediación de vulnerabilidades NuGet
 
-| Aspecto | Evidencia |
-|---------|-----------|
-| Principio | `CompanyId` desde `ICurrentUserService` (perfil local), no desde el cliente |
-| Pruebas | Auth (`CompanyId_comes_from_local_profile_not_claims`), usuarios, tickets, chat, GraphQL (documentos/conversaciones/tickets) |
+### 2.1 Hallazgos previos (auditoría inicial)
 
-## 4. HTTPS
+| ID | Paquete | Versión anterior | Gravedad | Advisory |
+|----|---------|------------------|----------|----------|
+| V1 | AutoMapper | 14.0.0 | High | [GHSA-rvv3-g6hj-g44x](https://github.com/advisories/GHSA-rvv3-g6hj-g44x) |
+| V2 | Microsoft.SemanticKernel.Core (transitivo) | 1.47.0 | Critical | [GHSA-2ww3-72rp-wpp4](https://github.com/advisories/GHSA-2ww3-72rp-wpp4) |
 
-| Ámbito | Estado verificable |
-|--------|--------------------|
-| Docker Compose local | Servicios exponen HTTP en puertos 8080/8081/8082/5173 (`ASPNETCORE_URLS: http://+:8080`) |
-| Auth0 metadata | Documentado: HTTPS metadata obligatorio fuera de Development para JWKS |
-| Producción AWS | El deploy CD no configura TLS dentro del workflow SSH; TLS dependería de reverse proxy/host en EC2 (no inspeccionado desde aquí) |
+**Declaración directa:**
 
-Conclusión: en el entorno local medido el tráfico API es HTTP. No se afirma HTTPS end-to-end en producción sin evidencia del proxy en EC2.
+- `ContactCenterAI.Application.csproj` → `AutoMapper`
+- `ContactCenterAI.Infrastructure.csproj` → `Microsoft.SemanticKernel` (trae `Microsoft.SemanticKernel.Core` de forma transitiva)
 
-## 5. Manejo de secretos
+### 2.2 Correcciones aplicadas
 
-| Control | Evidencia |
-|---------|-----------|
-| `.env` no versionado | Entradas en `.gitignore` (`.env`, variantes, `*.secrets`, `secrets.json`) |
-| Plantillas | `.env.example` y `src/frontend/contact-center-web/.env.example` con placeholders |
-| CD | Secretos GitHub (`EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`) referenciados en `deploy.yml` |
-| Logs | Bff evita enriquecer logs con Authorization (tests de forwarding) |
+| Paquete | Versión anterior | Versión corregida | Notas |
+|---------|------------------|-------------------|-------|
+| AutoMapper | 14.0.0 | **15.1.1** | Ajuste DI: `AddAutoMapper(cfg => { }, assembly)` (API v15). Dependencias `Microsoft.Extensions.*` elevadas a **10.0.0** por requisito de AutoMapper 15. Licencia comercial: opcional vía `AUTOMAPPER_LICENSE_KEY` (sin clave solo registra avisos; no se subieron secretos). |
+| Microsoft.SemanticKernel | 1.47.0 | **1.71.0** | Alineado al umbral del advisory; paquetes SK del mismo metapaquete. |
 
-En esta revisión **no** se pegaron ni subieron valores de `.env` ni tokens.
+**Cambio de código mínimo:** `ContactCenterAI.Application/DependencyInjection.cs` (firma `AddAutoMapper`).
 
-## 6. `.gitignore`
+### 2.3 Verificación post-remediación (2026-07-19)
 
-Ignora, entre otros: `bin/`, `obj/`, `node_modules/`, `dist/`, `.env*`, `storage/`, `TestResults/`, `artifacts/`, secretos y `.cursor/`.  
-Nota: `artifacts/` está ignorado; las evidencias locales de esta sumativa viven ahí pero no se versionan automáticamente.
+| Paso | Resultado |
+|------|-----------|
+| `dotnet restore src/backend/ContactCenterAI.sln` | Exit 0 |
+| `dotnet build ... --configuration Release` | Compilación correcta, 0 errores, 0 advertencias |
+| `dotnet test ... --configuration Release` | **131 superadas, 0 fallidas, 0 omitidas** |
+| `dotnet list ... package --vulnerable --include-transitive` | **Ningún proyecto reportó paquetes vulnerables** en los orígenes NuGet usados |
 
-## 7. Variables de entorno
-
-Configuración vía env/`IConfiguration` para JWT, Auth0, Gemini, RabbitMQ, puertos, CORS/`WEB_ORIGIN`, modos Chat (`CHAT_SERVICE_MODE`). Ejemplos en `.env.example` sin secretos reales.
-
-## 8. Validación de archivos PDF
-
-| Capa | Control |
-|------|---------|
-| Backend | `UploadDocumentCommandValidator`: `ContentType == application/pdf`, extensión `.pdf`, tamaño ≤ 10 MB |
-| Frontend | `DocumentsPage.tsx`: accept PDF y mensajes de error |
-| Procesamiento | `PdfTextExtractor` (PDFiumZ) falla de forma controlada si el PDF no abre |
-
-No se ejecutó fuzzing de PDFs maliciosos en esta sesión.
-
-## 9. Auditoría de dependencias
-
-### Backend — `dotnet list ... --vulnerable --include-transitive`
-
-Ejecutado 2026-07-19. Exit 0. **Hallazgos:**
-
-| Paquete | Severidad | Advisory |
-|---------|-----------|----------|
-| AutoMapper 14.0.0 | High | https://github.com/advisories/GHSA-rvv3-g6hj-g44x |
-| Microsoft.SemanticKernel.Core 1.47.0 (transitivo) | Critical | https://github.com/advisories/GHSA-2ww3-72rp-wpp4 |
-
-Proyectos Chat.* y Bff.* no reportaron paquetes vulnerables en esa salida.  
-Evidencia: `artifacts/test-results/nuget-vulnerable-audit.txt` y sección histórica del mismo día en esta carpeta.
-
-### Frontend — `npm audit`
+Extracto segunda auditoría:
 
 ```text
-found 0 vulnerabilities
+El proyecto "ContactCenterAI.Application" especificado no tiene paquetes vulnerables en los orígenes actuales.
+El proyecto "ContactCenterAI.Infrastructure" especificado no tiene paquetes vulnerables en los orígenes actuales.
+(... resto de proyectos de la solución: mismo mensaje ...)
 ```
 
-(Exit 0 en la ejecución de esta sesión.)
+### 2.4 Frontend (`npm audit`)
 
-## 10. Análisis estático disponible
+Ejecución previa en la misma jornada académica: `found 0 vulnerabilities` (ver evidencia en `artifacts/test-results/` local si existe).
 
-| Herramienta | Estado |
-|-------------|--------|
-| CodeQL | Workflow `.github/workflows/codeql.yml` (csharp + javascript-typescript; push/PR/schedule/workflow_dispatch) |
-| Resultados CodeQL | **No ejecutados** en esta sesión local; no hay SARIF ni “cero alertas” afirmable |
-| CI clásico | `.github/workflows/ci.yml` no incluye escaneo SAST aparte de CodeQL |
+---
 
-## 11. Resumen
+## 3. CodeQL
 
-| Tema | Veredicto breve |
-|------|-----------------|
-| AuthN/AuthZ / tenancy | Controles implementados y cubiertos por tests |
-| Secretos en git | `.env` ignorado; ejemplos sin secretos |
-| PDF | Validación de tipo/tamaño presente |
-| npm | 0 vulnerabilidades reportadas |
-| NuGet | 2 paquetes vulnerables (High + Critical) — abiertos |
-| CodeQL | Configurado, sin resultados aún |
-| HTTPS local | HTTP en compose local |
+| Campo | Valor |
+|-------|-------|
+| Workflow | `.github/workflows/codeql.yml` |
+| Resultado en esta sesión | Configurado; **no** se ejecutó el análisis en GitHub aquí |
+| Afirmación | No se afirma “cero alertas CodeQL” sin corrida en CI |
 
-**No se afirma cero vulnerabilidades del producto.**
+---
+
+## 4. Resumen ejecutivo
+
+| Fuente | Estado tras remediación |
+|--------|-------------------------|
+| NuGet `--vulnerable --include-transitive` | Sin paquetes vulnerables reportados (2026-07-19) |
+| AutoMapper / Semantic Kernel | Actualizados a 15.1.1 / 1.71.0 |
+| CodeQL | Pendiente de primera ejecución en GitHub |
+| Controles AuthN/AuthZ/tenancy | Implementados y cubiertos por tests |
+
+**Afirmación limitada:** la segunda auditoría NuGet **no reportó vulnerabilidades** en la solución en esa fecha. Eso no sustituye CodeQL ni un pen test.

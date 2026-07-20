@@ -13,7 +13,7 @@ Motor: PostgreSQL 16 + extensión `vector` (pgvector).
 |-------|-------------------|---------|-------|
 | `companies` | Document API | Document API | Tenancy. Chat solo conoce `CompanyId` por claim/parámetro |
 | `users` | Document API | Document API | Perfil local (ver sección 4). Incluye `CompanyId`, `Role`, `IsActive`, email de negocio |
-| `refresh_tokens` | Document API | Document API | Solo mientras exista JWT local; se depreca con Cognito |
+| `refresh_tokens` | Document API | Document API | Uso asociado al modo JWT local; en Auth0 el acceso es vía token del IdP |
 | `documents` | Document API (metadata/upload); Worker (status/processed) | Document API, Worker | Worker actualiza `Status`, `ProcessedAt`, `ErrorMessage` |
 | `document_chunks` | Document Worker | Document API (search), Worker | Embeddings `vector(1536)` (o dimensión configurada) |
 | `__EFMigrationsHistory` | Document API / Worker tools | — | Historial de migraciones de este bounded context |

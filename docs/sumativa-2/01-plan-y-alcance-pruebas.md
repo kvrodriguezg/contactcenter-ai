@@ -72,7 +72,7 @@ Comprobadas mediante código, tests automatizados y/o configuración existente:
 | Seguridad (dependencias y controles) | NuGet vulnerable, npm audit, revisión de Auth/roles/secretos |
 | Regresión | Re-ejecución de la suite tras correcciones históricas documentadas en Git |
 
-No hay suite E2E automatizada con navegador en el repositorio. Las pruebas E2E Auth0+Gemini descritas en `docs/testing/chat-microservice-test-evidence.md` son checklist manual.
+No hay suite E2E automatizada con navegador en el repositorio. Las pruebas E2E Auth0+Gemini descritas en `docs/evidence/chat-microservice-test-evidence.md` son checklist manual.
 
 ## Entorno de ejecución (esta evidencia)
 

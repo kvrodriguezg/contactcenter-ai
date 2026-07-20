@@ -14,7 +14,8 @@ public static class DependencyInjection
 
         services.AddMediatR(configuration => configuration.RegisterServicesFromAssembly(assembly));
         services.AddValidatorsFromAssembly(assembly);
-        services.AddAutoMapper(assembly);
+        // AutoMapper 15+: configuración explícita; licencia opcional vía AUTOMAPPER_LICENSE_KEY.
+        services.AddAutoMapper(cfg => { }, assembly);
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
         return services;

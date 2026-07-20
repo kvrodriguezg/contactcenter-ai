@@ -1,217 +1,142 @@
 # ContactCenterAI
 
-Plataforma SaaS de soporte inteligente para agentes de contact center mediante RAG (Retrieval-Augmented Generation) sobre documentos PDF.
+Plataforma SaaS de soporte para agentes de contact center con RAG sobre documentos PDF.
 
 ## Funcionalidades implementadas
 
-- Login con JWT
-- Roles y usuarios (SuperAdmin, Agent)
-- Empresas (multi-tenant)
-- Dashboard
-- Carga de documentos PDF
-- Procesamiento de documentos en Worker
-- Extracción de texto desde PDF (PDFiumZ)
-- Generación de chunks de texto
-- Embeddings con Gemini API
-- Búsqueda semántica con PostgreSQL + pgvector
-- Chat RAG backend con respuestas basadas en documentos
+- Autenticación con **Auth0** (JWT RS256) en entorno productivo/configurado
+- Login JWT local solo para desarrollo (`AUTH_PROVIDER=Local`)
+- Roles: **SuperAdmin**, **CompanyAdmin**, **Agent**
+- Gestión multiempresa (tenancy por `CompanyId`)
+- Usuarios y empresas
+- Carga y listado de documentos PDF
+- Worker Service: extracción PDF, chunks y embeddings
+- Mensajería asíncrona con **RabbitMQ** (opcional por feature flag)
+- Búsqueda semántica con **PostgreSQL + pgvector**
+- **Chat API** independiente (conversaciones RAG con Gemini)
+- **GraphQL BFF** para consultas agregadas
 - Historial de conversaciones
+- Tickets y escalamiento
+- Despliegue en **AWS EC2** con Docker Compose
+- HTTPS en borde con **Caddy** (snippet de reverse proxy)
 
 ## Stack técnico
 
 | Capa | Tecnología |
 |------|------------|
-| Backend | ASP.NET Core 9, Clean Architecture, CQRS + MediatR |
-| Persistencia | Entity Framework Core, PostgreSQL + pgvector |
+| Core API | ASP.NET Core 9, Clean Architecture, CQRS + MediatR |
+| Chat API | ASP.NET Core 9 (bounded context propio) |
+| GraphQL BFF | HotChocolate / BFF en `:8082` |
+| Persistencia | PostgreSQL Core (pgvector) + PostgreSQL Chat |
+| Worker | BackgroundService + consumers RabbitMQ |
 | Frontend | React, Vite, TypeScript, Material UI |
 | IA | Gemini API (embeddings y chat) |
-| Infraestructura | Docker, Docker Compose, GitHub Actions |
+| Mensajería | RabbitMQ |
+| Infraestructura | Docker Compose, Caddy, GitHub Actions, AWS EC2 |
 
-## Arquitectura
-
-```text
-src/
-  backend/
-    ContactCenterAI.Domain/          Entidades y reglas de negocio
-    ContactCenterAI.Application/     Casos de uso, CQRS, interfaces
-    ContactCenterAI.Infrastructure/  EF Core, servicios externos, IA
-    ContactCenterAI.Api/             API REST protegida con JWT
-    ContactCenterAI.Worker/          Procesamiento de documentos en background
-  frontend/
-    contact-center-web/              SPA React
-deploy/docker/                       Dockerfiles y scripts de base de datos
-tests/                               Pruebas unitarias xUnit
-```
-
-| Componente | Responsabilidad |
-|------------|-----------------|
-| **Api** | Endpoints REST, autenticación, documentos, búsqueda semántica, chat RAG |
-| **Worker** | Procesa PDFs pendientes: extrae texto, genera chunks y embeddings |
-| **Web** | Interfaz de usuario (login, dashboard, documentos) |
-| **Database** | PostgreSQL con extensión pgvector para vectores |
-| **Domain** | Entidades: usuarios, empresas, documentos, chunks, conversaciones |
-| **Application** | Commands, queries, validaciones, DTOs |
-| **Infrastructure** | Implementaciones: EF Core, almacenamiento local, Gemini API |
-
-## Flujo RAG
+## Arquitectura de servicios
 
 ```text
-PDF subido → Worker extrae texto → genera chunks → Gemini genera embeddings
-    → almacena vectores en pgvector → búsqueda semántica recupera chunks relevantes
-    → Gemini Chat genera respuesta con contexto → respuesta con fuentes al agente
+Frontend (web)
+    ├── Core API (:8080)     → db (PostgreSQL + pgvector)
+    ├── Chat API (:8081)     → chat-db (PostgreSQL)
+    ├── GraphQL BFF (:8082)  → Core API + Chat API
+    └── Worker               → db + RabbitMQ + almacenamiento PDF
 ```
+
+Detalle: [docs/architecture/](docs/architecture/) y [docs/README.md](docs/README.md).
 
 ## Requisitos
 
 - .NET 9 SDK
 - Node.js 22+
 - Docker y Docker Compose
-- Cuenta en [Google AI Studio](https://aistudio.google.com/) para obtener `GEMINI_API_KEY`
+- Cuenta en [Google AI Studio](https://aistudio.google.com/) para `GEMINI_API_KEY`
+- (Producción) Auth0 tenant + dominio Caddy/HTTPS
 
 ## Variables de entorno
-
-Copiar el archivo de ejemplo y completar los valores locales:
 
 ```bash
 cp .env.example .env
 ```
 
-Ejemplo seguro (sin claves reales):
+Variables relevantes (valores reales solo en `.env` local o en el host EC2; no se versionan):
 
-```env
-# PostgreSQL
-POSTGRES_DB=contactcenterai
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_PORT=5432
+- `AUTH_PROVIDER` / `VITE_AUTH_PROVIDER`: `Auth0` o `Local`
+- `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `VITE_AUTH0_*`
+- `GEMINI_API_KEY`
+- `MESSAGING_ENABLED`, `RABBITMQ_*`
+- `CHAT_SERVICE_MODE` / `VITE_CHAT_SERVICE_MODE`: `Embedded` o `External`
 
-# API
-API_PORT=8080
-ASPNETCORE_ENVIRONMENT=Development
-JWT_ISSUER=ContactCenterAI
-JWT_AUDIENCE=ContactCenterAI.Client
-JWT_SECRET_KEY=DEV_ONLY_SECRET_KEY_CHANGE_IN_PRODUCTION_123456
-
-# Frontend
-WEB_PORT=5173
-WEB_ORIGIN=http://localhost:5173
-VITE_API_BASE_URL=http://localhost:8080
-
-# Proveedor de IA (Gemini)
-AI_PROVIDER=Gemini
-GEMINI_API_KEY=
-GEMINI_EMBEDDINGS_MODEL=gemini-embedding-001
-GEMINI_CHAT_MODEL=gemini-2.5-flash
-GEMINI_EMBEDDING_DIMENSIONS=1536
-
-# Document processing (Worker)
-DocumentProcessing__IntervalSeconds=30
-DocumentProcessing__ChunkSize=1000
-DocumentProcessing__ChunkOverlap=150
-DocumentProcessing__BatchSize=5
-```
-
-El archivo `.env` no se versiona. Las claves reales deben configurarse en variables de entorno locales o en GitHub Secrets para CI/CD.
+Plantilla completa: `.env.example`.
 
 ## Ejecución local con Docker
 
 ```bash
 cp .env.example .env
-# Editar .env y agregar GEMINI_API_KEY
+# Completar GEMINI_API_KEY y, si aplica, Auth0
 
-docker compose up -d db api web worker
+docker compose up -d
+docker compose ps
 ```
 
-| Servicio | URL |
-|----------|-----|
-| API Swagger | http://localhost:8080/swagger |
-| API Health | http://localhost:8080/health |
+| Servicio | URL típica |
+|----------|------------|
+| Core API / Swagger | http://localhost:8080/swagger |
+| Core health | http://localhost:8080/health |
+| Chat API health | http://localhost:8081/health |
+| GraphQL BFF | http://localhost:8082/graphql |
 | Frontend | http://localhost:5173 |
-| PostgreSQL | localhost:5432 |
+| PostgreSQL Core | localhost:5432 |
+| PostgreSQL Chat | localhost:5433 |
+| RabbitMQ AMQP | localhost:5672 |
 
-### Credenciales de desarrollo
+HTTPS en despliegue: ver `deploy/caddy/Caddyfile.graphql-bff.snippet`.
+
+### Credenciales locales (solo desarrollo)
+
+Válidas **únicamente** cuando `AUTH_PROVIDER=Local`. **No** corresponden al acceso productivo con Auth0.
 
 | Usuario | Contraseña | Rol |
 |---------|------------|-----|
 | admin@contactcenterai.cl | Admin123* | SuperAdmin |
 | agente@contactcenterai.cl | Agent123* | Agent |
 
-## Ejecución local sin Docker
-
-```bash
-# Backend
-dotnet restore src/backend/ContactCenterAI.sln
-dotnet build src/backend/ContactCenterAI.sln
-dotnet run --project src/backend/ContactCenterAI.Api
-
-# Worker (terminal separada)
-dotnet run --project src/backend/ContactCenterAI.Worker
-
-# Frontend
-cd src/frontend/contact-center-web
-cp .env.example .env
-npm install
-npm run dev
-```
+Con `AUTH_PROVIDER=Auth0`, `POST /api/auth/login` responde **410** y el acceso es vía Auth0.
 
 ## Pruebas
 
 ```bash
-dotnet build src/backend/ContactCenterAI.sln
-dotnet test src/backend/ContactCenterAI.sln
+dotnet restore src/backend/ContactCenterAI.sln
+dotnet build src/backend/ContactCenterAI.sln --configuration Release
+dotnet test src/backend/ContactCenterAI.sln --configuration Release
 
 cd src/frontend/contact-center-web
+npm ci
 npm run build
 ```
 
-## Endpoints principales
+Evidencias de calidad: [docs/sumativa-2/](docs/sumativa-2/).
 
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| POST | `/api/auth/login` | Autenticación JWT |
-| POST | `/api/documents` | Subir PDF |
-| GET | `/api/documents` | Listar documentos |
-| POST | `/api/documents/search` | Búsqueda semántica |
-| POST | `/api/chat/ask` | Pregunta RAG con fuentes |
-| GET | `/api/chat/conversations` | Historial de conversaciones |
-| GET | `/api/chat/conversations/{id}` | Detalle de conversación |
+## CI/CD (GitHub Actions)
 
-## CI/CD
+| Workflow | Función |
+|----------|---------|
+| `.github/workflows/ci.yml` | Restore, build, test, build frontend, build imágenes Docker |
+| `.github/workflows/deploy.yml` | Despliegue a AWS EC2 por SSH (push a `main` / manual) |
+| `.github/workflows/codeql.yml` | Análisis estático CodeQL (C# y JS/TS) |
 
-**Integración continua (CI):** GitHub Actions (`.github/workflows/ci.yml`) ejecuta en cada push/PR a `main`, `master` y `develop`:
+Secrets de deploy (`EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`) solo en GitHub Secrets. El `.env` de producción permanece en la instancia EC2.
 
-- `dotnet restore`, `build` y `test` del backend
-- `npm ci` y `build` del frontend
-- Build de imágenes Docker (api, worker, web)
+## Proveedor de IA
 
-**Despliegue continuo (CD):** GitHub Actions (`.github/workflows/deploy.yml`) despliega hacia AWS EC2.
-
-- Se activa automáticamente con **push a `main`**
-- También puede ejecutarse **manualmente** (`workflow_dispatch`)
-- Secrets requeridos en el repositorio (sin valores en Git):
-  - `EC2_HOST`
-  - `EC2_USER`
-  - `EC2_SSH_KEY`
-- El archivo `.env` de producción **permanece únicamente en la instancia EC2**; el workflow no lo crea ni lo sobrescribe
-- En EC2 se espera el clon del repositorio en `${HOME}/contactcenter-ai` (variable `PROJECT_PATH` del workflow; ajustable según la máquina)
-
-## Decisión de proveedor de IA
-
-| Proveedor | Estado | Motivo |
-|-----------|--------|--------|
-| Azure OpenAI | Descartado | Suscripción estudiantil deshabilitada |
-| AWS Bedrock | Descartado | Entorno VocLabs sin permisos IAM |
-| **Gemini API** | **En uso** | Proveedor configurable para embeddings (`gemini-embedding-001`) y chat (`gemini-2.5-flash`) |
-
-La configuración se realiza mediante variables de entorno. No se hardcodean claves en el código ni en archivos versionados.
+| Proveedor | Estado |
+|-----------|--------|
+| Gemini API | En uso (embeddings y chat) |
+| Azure OpenAI / Bedrock | Descartados en el contexto académico del proyecto |
 
 ## Seguridad
 
-- El archivo `.env` está en `.gitignore` y no debe subirse al repositorio.
-- `GEMINI_API_KEY` y `JWT_SECRET_KEY` deben configurarse como secretos en entorno local o GitHub Secrets.
-- Los endpoints de la API requieren JWT excepto login.
-- El filtrado por empresa (tenant) aplica en documentos, búsqueda y chat.
-
-## Pendiente
-
-- Índice vectorial HNSW para optimización de búsqueda semántica
+- `.env` está en `.gitignore`.
+- Roles y `CompanyId` se resuelven desde la base local, no desde claims de Auth0.
+- Detalle: [docs/security/authentication-authorization.md](docs/security/authentication-authorization.md).
