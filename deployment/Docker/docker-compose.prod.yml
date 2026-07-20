@@ -1,0 +1,249 @@
+# ContactCenterAI — compose de producción (paquete de entrega)
+# Copia operativa basada en docker-compose.yml del repositorio.
+# Diferencias respecto a desarrollo local:
+#   - ASPNETCORE_ENVIRONMENT / DOTNET_ENVIRONMENT = Production
+#   - AUTH_PROVIDER por defecto Auth0 (configurable vía .env)
+#   - Management UI de RabbitMQ permanece en 127.0.0.1
+# Ejecutar SIEMPRE desde la raíz del repositorio:
+#   docker compose -f deployment/Docker/docker-compose.prod.yml --env-file .env up -d
+#services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: contactcenterai-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-contactcenterai}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-contactcenterai}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: deployment/Docker/Dockerfiles/Dockerfile.api
+    container_name: contactcenterai-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB:-contactcenterai};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      Jwt__Issuer: ${JWT_ISSUER:-ContactCenterAI}
+      Jwt__Audience: ${JWT_AUDIENCE:-ContactCenterAI.Client}
+      Jwt__SecretKey: ${JWT_SECRET_KEY:-DEV_ONLY_SECRET_KEY_CHANGE_IN_PRODUCTION_123456}
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-Auth0}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://contactcenterai-api}
+      Cors__Origins__0: ${WEB_ORIGIN:-http://localhost:5173}
+      Ai__Provider: ${AI_PROVIDER:-Gemini}
+      Gemini__ApiKey: ${GEMINI_API_KEY:-}
+      Gemini__EmbeddingsModel: ${GEMINI_EMBEDDINGS_MODEL:-gemini-embedding-001}
+      Gemini__ChatModel: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
+      Gemini__EmbeddingDimensions: ${GEMINI_EMBEDDING_DIMENSIONS:-1536}
+      DocumentStorage__BasePath: /app/storage/documents
+      CHAT_SERVICE_MODE: ${CHAT_SERVICE_MODE:-Embedded}
+      Messaging__Enabled: ${MESSAGING_ENABLED:-false}
+      RabbitMq__Host: ${RABBITMQ_HOST:-rabbitmq}
+      RabbitMq__Port: ${RABBITMQ_PORT:-5672}
+      RabbitMq__UserName: ${RABBITMQ_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:-guest}
+      RabbitMq__VirtualHost: ${RABBITMQ_VHOST:-/}
+      RabbitMq__ClientProvidedName: contactcenterai-api
+    ports:
+      - "${API_PORT:-8080}:8080"
+    volumes:
+      - documents_data:/app/storage/documents
+      - api_logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  chat-db:
+    image: postgres:16-alpine
+    container_name: contactcenterai-chat-db
+    environment:
+      POSTGRES_DB: ${CHAT_POSTGRES_DB:-contactcenterai_chat}
+      POSTGRES_USER: ${CHAT_POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${CHAT_POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${CHAT_POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - chat_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CHAT_POSTGRES_USER:-postgres} -d ${CHAT_POSTGRES_DB:-contactcenterai_chat}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  chat-api:
+    build:
+      context: .
+      dockerfile: deployment/Docker/Dockerfiles/Dockerfile.chat-api
+    container_name: contactcenterai-chat-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__ChatDatabase: Host=chat-db;Port=5432;Database=${CHAT_POSTGRES_DB:-contactcenterai_chat};Username=${CHAT_POSTGRES_USER:-postgres};Password=${CHAT_POSTGRES_PASSWORD:-postgres}
+      CoreApi__BaseUrl: http://api:8080
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-Auth0}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://contactcenterai-api}
+      Jwt__Issuer: ${JWT_ISSUER:-ContactCenterAI}
+      Jwt__Audience: ${JWT_AUDIENCE:-ContactCenterAI.Client}
+      Jwt__SecretKey: ${JWT_SECRET_KEY:-DEV_ONLY_SECRET_KEY_CHANGE_IN_PRODUCTION_123456}
+      Cors__Origins__0: ${WEB_ORIGIN:-http://localhost:5173}
+      Gemini__ApiKey: ${GEMINI_API_KEY:-}
+      Gemini__ChatModel: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
+    ports:
+      - "${CHAT_API_PORT:-8081}:8080"
+    volumes:
+      - chat_api_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    depends_on:
+      chat-db:
+        condition: service_healthy
+      api:
+        condition: service_started
+
+  worker:
+    build:
+      context: .
+      dockerfile: deployment/Docker/Dockerfiles/Dockerfile.worker
+    container_name: contactcenterai-worker
+    environment:
+      DOTNET_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB:-contactcenterai};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      Jwt__Issuer: ${JWT_ISSUER:-ContactCenterAI}
+      Jwt__Audience: ${JWT_AUDIENCE:-ContactCenterAI.Client}
+      Jwt__SecretKey: ${JWT_SECRET_KEY:-DEV_ONLY_SECRET_KEY_CHANGE_IN_PRODUCTION_123456}
+      Ai__Provider: ${AI_PROVIDER:-Gemini}
+      Gemini__ApiKey: ${GEMINI_API_KEY:-}
+      Gemini__EmbeddingsModel: ${GEMINI_EMBEDDINGS_MODEL:-gemini-embedding-001}
+      Gemini__ChatModel: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
+      Gemini__EmbeddingDimensions: ${GEMINI_EMBEDDING_DIMENSIONS:-1536}
+      DocumentStorage__BasePath: /app/storage/documents
+      DocumentProcessing__IntervalSeconds: ${DOCUMENT_PROCESSING_INTERVAL_SECONDS:-30}
+      DocumentProcessing__ChunkSize: 1000
+      DocumentProcessing__ChunkOverlap: 150
+      DocumentProcessing__BatchSize: 5
+      # When Messaging is on, default polling off to avoid constant scans; set true for reconciliation.
+      DocumentProcessing__PollingEnabled: ${DOCUMENT_PROCESSING_POLLING_ENABLED:-true}
+      Messaging__Enabled: ${MESSAGING_ENABLED:-false}
+      RabbitMq__Host: ${RABBITMQ_HOST:-rabbitmq}
+      RabbitMq__Port: ${RABBITMQ_PORT:-5672}
+      RabbitMq__UserName: ${RABBITMQ_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:-guest}
+      RabbitMq__VirtualHost: ${RABBITMQ_VHOST:-/}
+      RabbitMq__ClientProvidedName: contactcenterai-worker
+    volumes:
+      - documents_data:/app/storage/documents
+      - worker_logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  bff:
+    build:
+      context: .
+      dockerfile: deployment/Docker/Dockerfiles/Dockerfile.bff
+    container_name: contactcenterai-bff
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+      CoreApi__BaseUrl: http://api:8080
+      ChatApi__BaseUrl: http://chat-api:8080
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-Auth0}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://contactcenterai-api}
+      Jwt__Issuer: ${JWT_ISSUER:-ContactCenterAI}
+      Jwt__Audience: ${JWT_AUDIENCE:-ContactCenterAI.Client}
+      Jwt__SecretKey: ${JWT_SECRET_KEY:-DEV_ONLY_SECRET_KEY_CHANGE_IN_PRODUCTION_123456}
+      Cors__Origins__0: ${WEB_ORIGIN:-http://localhost:5173}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
+    ports:
+      - "${BFF_PORT:-8082}:8080"
+    volumes:
+      - bff_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    depends_on:
+      api:
+        condition: service_started
+      chat-api:
+        condition: service_started
+
+  web:
+    build:
+      context: .
+      dockerfile: deployment/Docker/Dockerfiles/Dockerfile.web
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_AUTH_PROVIDER: ${VITE_AUTH_PROVIDER}
+        VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN}
+        VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID}
+        VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE}
+        VITE_AUTH0_REDIRECT_URI: ${VITE_AUTH0_REDIRECT_URI}
+        VITE_CHAT_SERVICE_MODE: ${VITE_CHAT_SERVICE_MODE}
+        VITE_CHAT_API_BASE_URL: ${VITE_CHAT_API_BASE_URL}
+        VITE_GRAPHQL_URL: ${VITE_GRAPHQL_URL:-/graphql}
+        VITE_BFF_GRAPHQL_URL: ${VITE_BFF_GRAPHQL_URL:-}
+    container_name: contactcenterai-web
+    ports:
+      - "${WEB_PORT:-5173}:80"
+    depends_on:
+      - api
+      - chat-api
+      - bff
+
+  # RabbitMQ broker for event-oriented document processing and ticket escalation (feature 5).
+  # Durable exchange/queues are declared by the app on startup; guest/guest is LOCAL ONLY.
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: contactcenterai-rabbitmq
+    hostname: contactcenterai-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+    ports:
+      # AMQP: reachable on the compose network; host mapping is for local tooling only.
+      - "${RABBITMQ_PORT:-5672}:5672"
+      # Management UI: loopback-only (local/restricted). Do not expose publicly in production.
+      - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  postgres_data:
+  chat_postgres_data:
+  documents_data:
+  api_logs:
+  chat_api_logs:
+  worker_logs:
+  bff_logs:
+  rabbitmq_data:

@@ -39,6 +39,16 @@
 - [Evidencia de pruebas Chat](evidence/chat-microservice-test-evidence.md)
 - [Históricos (planes y reportes previos)](evidence/historico/) — no describen el sistema actual
 
+## Entrega final
+
+| Documento | Ruta |
+|-----------|------|
+| Manual técnico | [final/Manual_Tecnico.md](final/Manual_Tecnico.md) |
+| Manual de usuario | [final/Manual_Usuario.md](final/Manual_Usuario.md) |
+| README final | [final/README_Final.md](final/README_Final.md) |
+| Scripts SQL | [`../scripts/`](../scripts/) |
+| Docker entrega | [`../deployment/Docker/`](../deployment/Docker/) |
+
 ## Académico
 
 Colocar entregables Word/PDF en:

@@ -1,0 +1,25 @@
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+COPY src/backend/ContactCenterAI.Domain/ContactCenterAI.Domain.csproj ContactCenterAI.Domain/
+COPY src/backend/ContactCenterAI.Application/ContactCenterAI.Application.csproj ContactCenterAI.Application/
+COPY src/backend/ContactCenterAI.Infrastructure/ContactCenterAI.Infrastructure.csproj ContactCenterAI.Infrastructure/
+COPY src/backend/ContactCenterAI.Worker/ContactCenterAI.Worker.csproj ContactCenterAI.Worker/
+
+RUN dotnet restore ContactCenterAI.Worker/ContactCenterAI.Worker.csproj
+
+COPY src/backend/ContactCenterAI.Domain/ ContactCenterAI.Domain/
+COPY src/backend/ContactCenterAI.Application/ ContactCenterAI.Application/
+COPY src/backend/ContactCenterAI.Infrastructure/ ContactCenterAI.Infrastructure/
+COPY src/backend/ContactCenterAI.Worker/ ContactCenterAI.Worker/
+
+RUN dotnet publish ContactCenterAI.Worker/ContactCenterAI.Worker.csproj -c Release -o /app/publish /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+WORKDIR /app
+
+RUN mkdir -p /app/storage/documents /app/logs
+
+COPY --from=build /app/publish .
+
+ENTRYPOINT ["dotnet", "ContactCenterAI.Worker.dll"]
